@@ -1,0 +1,38 @@
+.detalle-grid {
+  display: grid; grid-template-columns: 260px 1fr; gap: 24px;
+}
+@media (max-width: 700px) { .detalle-grid { grid-template-columns: 1fr; } }
+
+.detalle-imagen {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 240px; text-align: center;
+  background:
+    radial-gradient(circle at 70% 20%, rgba(72,202,228,0.2), transparent 34%),
+    linear-gradient(135deg, #f8fafc, #eef7fb);
+  border-color: rgba(0,119,182,0.14);
+  box-shadow: var(--shadow-md);
+}
+
+.precio-container {
+  display: flex; flex-direction: column; margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid rgba(0,119,182,0.14);
+  border-radius: var(--radius);
+  background: #f8fafc;
+}
+.precio-label { font-size: 0.8rem; color: var(--color-text-muted); }
+.precio-valor { font-size: 2rem; font-weight: 700; color: var(--color-primary); }
+
+.stock-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.stock-table th { text-align: left; padding: 8px 12px; background: var(--color-bg); font-weight: 600; font-size: 0.8rem; }
+.stock-table td { padding: 8px 12px; border-top: 1px solid var(--color-border); }
+
+.detalle-info .card {
+  animation: cardEnter 0.25s ease both;
+}
+
+.detalle-info .btn-lg {
+  min-width: 190px;
+  justify-content: center;
+}

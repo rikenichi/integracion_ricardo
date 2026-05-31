@@ -1,0 +1,68 @@
+.convenios-page {
+  display: grid;
+  gap: 20px;
+}
+
+.convenios-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.convenios-kicker {
+  margin: 0 0 4px;
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.convenios-header .page-title {
+  margin-bottom: 6px;
+}
+
+.convenios-toolbar {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.convenios-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.convenios-section-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.convenios-section-header span {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.convenios-empty,
+.convenios-acceso {
+  padding: 24px;
+}
+
+.convenios-acceso h1 {
+  margin-top: 0;
+}
+
+@media (max-width: 760px) {
+  .convenios-header {
+    flex-direction: column;
+  }
+
+  .convenios-toolbar {
+    justify-content: flex-start;
+  }
+}

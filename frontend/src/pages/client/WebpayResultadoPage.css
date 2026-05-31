@@ -1,0 +1,27 @@
+.wp-resultado-card {
+  max-width: 520px; margin: 40px auto; text-align: center; padding: 40px;
+  box-shadow: var(--shadow-lg);
+  animation: cardEnter 0.28s ease both;
+}
+.wp-aprobado  { border-color: #6ee7b7; background: linear-gradient(180deg, #f0fdf4, #fff); }
+.wp-rechazado { border-color: #fca5a5; background: linear-gradient(180deg, #fff5f5, #fff); }
+
+.wp-resultado-icon { font-size: 4rem; margin-bottom: 16px; }
+
+.wp-subtitulo { margin: 8px 0 20px; font-size: 0.95rem; }
+
+.wp-detalles {
+  background: #fff; border: 1px solid var(--color-border);
+  border-radius: var(--radius); padding: 16px;
+  margin: 16px 0; text-align: left;
+}
+.wp-fila {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 0; font-size: 0.875rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.wp-fila:last-child { border-bottom: none; }
+
+.wp-acciones {
+  display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px;
+}

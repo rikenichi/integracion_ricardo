@@ -1,0 +1,43 @@
+@startuml
+title MEDISTOCK Frontend - Arquitectura por dominios
+
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam defaultTextAlignment center
+left to right direction
+
+rectangle "App.jsx / Router\nReact Router DOM 6" as Router
+
+package "Páginas" as Pages {
+  rectangle "pages/auth\nLogin · Registro\nPerfil" as Auth
+  rectangle "pages/public\nHome · Catálogo\nProducto · Contacto" as Public
+  rectangle "pages/admin\nPanel · Dashboard\nB2B · Inventario" as Admin
+  rectangle "pages/client\nCarrito · Pedidos\nWebpay · Tracking" as Client
+}
+
+package "Transversal" as Shared {
+  rectangle "context\nAuth · Carrito · Toast" as Context
+  rectangle "components\nNavbar · Footer · UI base" as Components
+  rectangle "utils\nformat · permisos · precios" as Utils
+}
+
+rectangle "services/api.js\nAxios · JWT · endpoints" as Api
+rectangle "Backend API\nDjango REST Framework\nAWS" as Backend
+
+package "Integraciones externas" as External {
+  rectangle "Webpay Plus\nTransbank" as Webpay
+  rectangle "Courier / Logística\nChilexpress · Shippo/Mock" as Courier
+}
+
+Router --> Pages : renderiza rutas
+
+Pages ..> Shared : usa recursos transversales
+Pages --> Api : consume endpoints
+
+Api --> Backend : HTTP /api/*
+
+Backend --> Webpay : pagos
+Backend --> Courier : despacho / tracking
+
+@enduml

@@ -1,0 +1,64 @@
+.pago-layout {
+  display: grid; grid-template-columns: 1fr 300px; gap: 24px;
+}
+@media (max-width: 800px) { .pago-layout { grid-template-columns: 1fr; } }
+
+.metodos-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+}
+.metodo-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 14px 10px; border: 2px solid var(--color-border);
+  border-radius: var(--radius); background: #fff; font-size: 0.85rem;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.metodo-btn:hover { border-color: var(--color-primary); background: #f0f9ff; transform: translateY(-2px); box-shadow: var(--shadow); }
+.metodo-activo { border-color: var(--color-primary); background: #dbeafe; }
+
+.resumen-item { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.9rem; }
+.resumen-total { font-weight: 700; font-size: 1.1rem; }
+
+.info-banco { background: var(--color-bg); border-radius: var(--radius); padding: 14px; font-size: 0.875rem; line-height: 2; }
+
+.resultado-card {
+  max-width: 540px; margin: 40px auto; text-align: center; padding: 40px;
+  box-shadow: var(--shadow-lg);
+  animation: cardEnter 0.28s ease both;
+}
+.resultado-aprobado { border-color: #6ee7b7; background: linear-gradient(180deg, #f0fdf4, #fff); }
+.resultado-rechazado { border-color: #fca5a5; background: linear-gradient(180deg, #fff5f5, #fff); }
+.resultado-icon { font-size: 4rem; margin-bottom: 16px; }
+.resultado-detalles { background: var(--color-bg); border-radius: var(--radius); padding: 16px; margin: 20px 0; text-align: left; }
+.detalle-fila { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.875rem; border-bottom: 1px solid var(--color-border); }
+.detalle-fila:last-child { border-bottom: none; }
+.resultado-acciones { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* ── WebPay Plus real ── */
+.webpay-real-box {
+  border: 1px solid rgba(0,119,182,0.28); border-radius: var(--radius);
+  padding: 16px; margin-bottom: 16px; background: linear-gradient(180deg, #f0f9ff, #fff);
+  box-shadow: var(--shadow);
+}
+.webpay-real-header {
+  display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;
+}
+.webpay-logo { font-size: 1.8rem; flex-shrink: 0; }
+
+.btn-webpay {
+  background: #0077b6; color: #fff; border: none;
+  padding: 12px; border-radius: var(--radius);
+  font-size: 0.95rem; font-weight: 600; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background 0.2s;
+}
+.btn-webpay:hover:not(:disabled) { background: #005f8e; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn-webpay:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.metodos-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 16px 0 12px; color: var(--color-text-muted); font-size: 0.8rem;
+}
+.metodos-divider::before,
+.metodos-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--color-border);
+}

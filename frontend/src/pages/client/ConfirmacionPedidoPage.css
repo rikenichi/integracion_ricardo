@@ -1,0 +1,70 @@
+.confirmar-layout {
+  display: grid; grid-template-columns: 1fr 320px; gap: 24px;
+}
+@media (max-width: 800px) { .confirmar-layout { grid-template-columns: 1fr; } }
+
+.confirmar-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--color-border); font-size: 0.9rem;
+}
+.confirmar-item:last-child { border-bottom: none; }
+.confirmar-nombre { flex: 1; }
+.confirmar-precio { font-weight: 600; min-width: 100px; text-align: right; }
+
+.resumen-row { display: flex; justify-content: space-between; padding: 6px 0; }
+.resumen-total { font-weight: 700; font-size: 1.1rem; }
+.info-box {
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+
+.confirmar-resumen {
+  position: sticky;
+  top: 18px;
+  border-color: rgba(0,119,182,0.14);
+  box-shadow: var(--shadow-md);
+}
+
+.textarea-direccion {
+  resize: none;
+}
+
+.textarea-direccion::-webkit-resizer {
+  display: none;
+}
+
+.textarea-notas {
+  resize: vertical;
+  min-height: 70px;
+}
+
+/* Cotización de despacho */
+.cotizar-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+@media (max-width: 600px) { .cotizar-grid { grid-template-columns: 1fr; } }
+
+.cotizacion-resultado {
+  margin-top: 12px;
+  background: linear-gradient(180deg, #f0fdf4, #f8fafc);
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  animation: cardEnter 0.25s ease both;
+}
+.cotizacion-fila {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 0; font-size: 0.875rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.cotizacion-fila:last-of-type { border-bottom: none; }
+
+@media (max-width: 800px) {
+  .confirmar-resumen {
+    position: static;
+  }
+}

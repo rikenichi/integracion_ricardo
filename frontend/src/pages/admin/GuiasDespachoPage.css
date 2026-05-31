@@ -1,0 +1,77 @@
+.guias-page {
+  display: grid;
+  gap: 20px;
+}
+
+.guias-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.guias-kicker {
+  margin: 0 0 4px;
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.guias-header .page-title {
+  margin-bottom: 6px;
+}
+
+.guias-toolbar {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.guias-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.guias-section-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.guias-section-header span {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.guias-empty,
+.guias-acceso,
+.guias-pendiente {
+  padding: 24px;
+}
+
+.guias-acceso h1,
+.guias-pendiente h2 {
+  margin-top: 0;
+}
+
+.guias-acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 220px;
+}
+
+@media (max-width: 760px) {
+  .guias-header {
+    flex-direction: column;
+  }
+
+  .guias-toolbar {
+    justify-content: flex-start;
+  }
+}

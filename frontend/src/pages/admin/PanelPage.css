@@ -1,0 +1,130 @@
+.panel-bienvenida {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 24px; padding: 20px 24px;
+  border-color: rgba(0,119,182,0.14);
+  background:
+    radial-gradient(circle at 95% 5%, rgba(72,202,228,0.16), transparent 24%),
+    #fff;
+  box-shadow: var(--shadow-md);
+}
+.panel-acciones-rapidas {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+@media (max-width: 600px) { .panel-bienvenida { flex-direction: column; gap: 16px; } }
+
+.panel-tabs {
+  display: flex; gap: 4px; margin-bottom: 20px;
+  border-bottom: 2px solid var(--color-border); padding-bottom: 0;
+}
+.tab-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border: none; background: none;
+  font-size: 0.9rem; font-weight: 500; color: var(--color-text-muted);
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.tab-btn:hover { color: var(--color-primary); background: #f8fafc; }
+.tab-activo { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+.tab-badge {
+  background: var(--color-primary); color: #fff;
+  border-radius: 10px; padding: 1px 7px; font-size: 0.72rem; font-weight: 700;
+}
+
+.tabla-container { overflow-x: auto; padding: 0; animation: cardEnter 0.25s ease both; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.data-table th { padding: 12px 16px; text-align: left; background: var(--color-bg); font-weight: 600; border-bottom: 2px solid var(--color-border); font-size: 0.8rem; white-space: nowrap; }
+.data-table td { padding: 12px 16px; border-bottom: 1px solid var(--color-border); }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: #f8fafc; }
+
+.empty-state { text-align: center; padding: 48px; color: var(--color-text-muted); }
+
+.inventario-panel {
+  display: grid;
+  gap: 20px;
+}
+
+.inventario-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.inventario-stat {
+  padding: 18px 20px;
+  display: grid;
+  gap: 4px;
+}
+
+.inventario-stat span {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.inventario-stat strong {
+  color: var(--color-primary);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.inventario-stat small {
+  color: var(--color-text-muted);
+}
+
+.panel-section-header {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--color-border);
+  background: #fff;
+}
+
+.panel-section-header h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.panel-section-header p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.stock-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.stock-metric strong {
+  font-size: 1.25rem;
+  color: var(--color-text);
+}
+
+.stock-metric span,
+.stock-submetrics {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.stock-submetrics {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.mono-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 760px) {
+  .inventario-resumen {
+    grid-template-columns: 1fr;
+  }
+}

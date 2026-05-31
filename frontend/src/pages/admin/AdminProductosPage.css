@@ -1,0 +1,220 @@
+.admin-productos-page {
+  display: grid;
+  gap: 20px;
+}
+
+.admin-productos-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+.admin-productos-kicker {
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+.admin-productos-header .page-title {
+  margin-bottom: 6px;
+}
+
+.admin-productos-toolbar,
+.admin-productos-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.admin-productos-section-header {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+}
+
+.admin-productos-section-header h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.admin-productos-section-header span {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.admin-productos-form-card {
+  overflow: hidden;
+}
+
+.admin-productos-mode-selector {
+  background: #f8fbfd;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px 20px;
+}
+
+.admin-productos-mode-btn {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  min-height: 40px;
+  padding: 9px 16px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+}
+
+.admin-productos-mode-btn:hover,
+.admin-productos-mode-btn.is-active {
+  border-color: var(--color-primary);
+  box-shadow: 0 8px 20px rgba(25, 118, 210, 0.12);
+  color: var(--color-primary);
+}
+
+.admin-productos-form {
+  align-items: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 20px;
+}
+
+.admin-productos-subheader {
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: 12px;
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  padding: 4px 0 10px;
+}
+
+.admin-productos-subheader h3 {
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.admin-productos-subheader p {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+  margin: 0;
+  text-align: right;
+}
+
+.admin-productos-form label {
+  color: var(--color-text);
+  display: grid;
+  font-size: 0.84rem;
+  font-weight: 800;
+  gap: 6px;
+}
+
+.admin-productos-form input,
+.admin-productos-form select,
+.admin-productos-form textarea {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 500;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.admin-productos-form textarea {
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.admin-productos-form input,
+.admin-productos-form select {
+  box-sizing: border-box;
+  min-height: 44px;
+}
+
+.admin-productos-form select[multiple] {
+  min-height: 112px;
+}
+
+.admin-productos-form small {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.admin-productos-form-wide,
+.admin-productos-actions,
+.admin-productos-checks {
+  grid-column: 1 / -1;
+}
+
+.admin-productos-actions {
+  margin-top: 2px;
+}
+
+.admin-productos-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.admin-productos-checks label {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.admin-productos-checks input {
+  width: auto;
+}
+
+.admin-productos-empty,
+.admin-productos-acceso {
+  padding: 24px;
+}
+
+.admin-productos-acceso h1 {
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .admin-productos-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-productos-header {
+    flex-direction: column;
+  }
+
+  .admin-productos-toolbar,
+  .admin-productos-actions {
+    justify-content: flex-start;
+  }
+
+  .admin-productos-subheader {
+    flex-direction: column;
+  }
+
+  .admin-productos-subheader p {
+    text-align: left;
+  }
+
+  .admin-productos-form {
+    grid-template-columns: 1fr;
+  }
+}

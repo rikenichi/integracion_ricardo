@@ -1,0 +1,360 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { obtenerProductosCompatibles } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
+import { useCarrito } from '../../context/CarritoContext'
+import { puedeComprar, razonNoCompra } from '../../utils/permisos'
+import Footer from '../../components/Footer'
+import './HomePage.css'
+
+const heroSlides = [
+  {
+    eyebrow: 'Ecommerce medico',
+    title: 'Compra medicamentos e insumos medicos en linea',
+    text: 'Encuentra productos para pacientes, hogares, clinicas e instituciones con una experiencia simple y conectada.',
+    cta: 'Ver catalogo',
+    ctaTo: '/catalogo',
+    secondary: 'Crear cuenta',
+    secondaryTo: '/registro',
+    tone: 'slide-compra',
+  },
+  {
+    eyebrow: 'Despacho integrado',
+    title: 'Cotiza tu despacho antes de pagar',
+    text: 'Revisa costos y disponibilidad logistica durante la confirmacion del pedido, antes de iniciar el pago.',
+    cta: 'Armar pedido',
+    ctaTo: '/catalogo',
+    secondary: 'Ver carrito',
+    secondaryTo: '/carrito',
+    tone: 'slide-despacho',
+  },
+  {
+    eyebrow: 'Pago seguro',
+    title: 'Paga seguro con Webpay Plus en linea',
+    text: 'Inicia el pago desde tu pedido y vuelve a Medistock con un resultado claro para continuar el seguimiento.',
+    cta: 'Comprar ahora',
+    ctaTo: '/catalogo',
+    secondary: 'Mis pedidos',
+    secondaryTo: '/mis-pedidos',
+    tone: 'slide-webpay',
+  },
+  {
+    eyebrow: 'Stock actualizado',
+    title: 'Inventario visible para pacientes y clinicas',
+    text: 'Consulta disponibilidad, precios y datos de producto desde el catalogo conectado al backend.',
+    cta: 'Explorar stock',
+    ctaTo: '/catalogo',
+    secondary: 'Mi panel',
+    secondaryTo: '/panel',
+    tone: 'slide-stock',
+  },
+]
+
+const beneficios = [
+  { titulo: 'Despacho integrado', texto: 'Cotiza tu envio antes de pagar y sigue tu pedido desde tracking.' },
+  { titulo: 'Pagos seguros', texto: 'Flujo conectado a Webpay Plus para compras B2C y B2B.' },
+  { titulo: 'Inventario conectado', texto: 'Productos, stock y precios consumidos desde el backend.' },
+]
+
+const categoriasVisuales = [
+  { titulo: 'Jeringas', texto: 'Insumos de aplicacion', busqueda: 'jeringa', icono: 'J', clase: 'cat-jeringas' },
+  { titulo: 'Guantes', texto: 'Proteccion clinica', busqueda: 'guantes', icono: 'G', clase: 'cat-guantes' },
+  { titulo: 'Gasas y compresas', texto: 'Curaciones y primeros auxilios', busqueda: 'gasa', icono: 'C', clase: 'cat-gasas' },
+  { titulo: 'Insumos medicos', texto: 'Uso profesional y hogar', busqueda: 'insumo', icono: 'M', clase: 'cat-insumos' },
+  { titulo: 'Suplementos', texto: 'Bienestar y apoyo nutricional', busqueda: 'suplemento', icono: 'S', clase: 'cat-suplementos' },
+  { titulo: 'Cuidado de heridas', texto: 'Apositos y tratamiento', busqueda: 'herida', icono: 'H', clase: 'cat-heridas' },
+]
+
+const descuentosDemo = [12, 18, 15, 20, 10, 16, 14, 22]
+
+function formatearPrecio(valor) {
+  const numero = Number(valor || 0)
+  return `$${numero.toLocaleString('es-CL')}`
+}
+
+function obtenerPrecioProducto(producto, esB2B) {
+  return Number(esB2B ? producto.precio_b2b : producto.precio_b2c) || 0
+}
+
+function obtenerStock(producto) {
+  return Number(producto.stock_disponible ?? producto.stock ?? 0)
+}
+
+function obtenerBadgeStock(producto) {
+  const stock = obtenerStock(producto)
+
+  if (stock <= 0) return { label: 'Sin stock', className: 'stock-out' }
+  if (stock <= 10) return { label: 'Stock bajo', className: 'stock-low' }
+  return { label: 'Disponible', className: 'stock-ok' }
+}
+
+function crearOfertaVisual(producto, index, esB2B) {
+  const precioActual = obtenerPrecioProducto(producto, esB2B)
+  const descuento = descuentosDemo[index % descuentosDemo.length]
+  const precioAnterior = precioActual > 0 ? Math.round(precioActual / (1 - descuento / 100)) : 0
+
+  return { descuento, precioActual, precioAnterior }
+}
+
+export default function HomePage() {
+  const { usuario } = useAuth()
+  const { agregarItem } = useCarrito()
+  const usuarioPuedeComprar = puedeComprar(usuario)
+  const mensajeNoCompra = razonNoCompra(usuario)
+  const [productos, setProductos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [slideActivo, setSlideActivo] = useState(0)
+
+  const esB2B =
+    usuario?.tipo_usuario === 'B2B' ||
+    usuario?.role === 'cliente_b2b' ||
+    usuario?.rol === 'cliente_b2b' ||
+    usuario?.rol === 'ejecutivo'
+
+  useEffect(() => {
+    let activo = true
+    setLoading(true)
+
+    obtenerProductosCompatibles()
+      .then((data) => {
+        if (!activo) return
+        const productosApi = Array.isArray(data) ? data : []
+        setProductos(productosApi.slice(0, 8))
+        setError('')
+      })
+      .catch(() => {
+        if (!activo) return
+        setError('No pudimos cargar los productos destacados en este momento.')
+        setProductos([])
+      })
+      .finally(() => {
+        if (activo) setLoading(false)
+      })
+
+    return () => {
+      activo = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setSlideActivo((actual) => (actual + 1) % heroSlides.length)
+    }, 4500)
+
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const ofertasVisuales = useMemo(() => productos.slice(0, 8), [productos])
+
+  const cambiarSlide = (direccion) => {
+    setSlideActivo((actual) => (actual + direccion + heroSlides.length) % heroSlides.length)
+  }
+
+  return (
+    <main className="home-page">
+      <section className="home-hero-carousel" aria-label="Promociones principales">
+        <div className="home-hero-stage">
+          {heroSlides.map((slide, index) => (
+            <article
+              key={slide.title}
+              className={`home-hero-slide ${slide.tone} ${slideActivo === index ? 'activo' : ''}`}
+              aria-hidden={slideActivo !== index}
+            >
+              <div className="home-hero-copy">
+                <span className="home-hero-eyebrow">{slide.eyebrow}</span>
+                <h1>{slide.title}</h1>
+                <p>{slide.text}</p>
+                <div className="home-hero-actions">
+                  <Link className="btn-primary" to={slide.ctaTo}>
+                    {slide.cta}
+                  </Link>
+                  <Link className="btn-secondary" to={slide.secondaryTo}>
+                    {slide.secondary}
+                  </Link>
+                </div>
+              </div>
+
+              <div className="home-hero-visual" aria-hidden="true">
+                <div className="hero-product-pack">
+                  <span className="hero-pack-pill">Medistock</span>
+                  <div className="hero-pack-box">
+                    <span className="hero-pack-cross">+</span>
+                    <strong>Salud conectada</strong>
+                  </div>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <button className="hero-arrow hero-arrow-prev" type="button" onClick={() => cambiarSlide(-1)} aria-label="Slide anterior">
+          {'<'}
+        </button>
+        <button className="hero-arrow hero-arrow-next" type="button" onClick={() => cambiarSlide(1)} aria-label="Slide siguiente">
+          {'>'}
+        </button>
+
+        <div className="hero-dots" aria-label="Seleccionar slide">
+          {heroSlides.map((slide, index) => (
+            <button
+              key={slide.title}
+              type="button"
+              className={slideActivo === index ? 'activo' : ''}
+              onClick={() => setSlideActivo(index)}
+              aria-label={`Mostrar slide ${index + 1}`}
+              aria-current={slideActivo === index ? 'true' : undefined}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="home-section home-products-section">
+        <div className="section-heading">
+          <h2>Productos destacados</h2>
+        </div>
+
+        {loading && <div className="home-state">Cargando productos destacados...</div>}
+        {!loading && error && <div className="home-state error">{error}</div>}
+        {!loading && !error && productos.length === 0 && (
+          <div className="home-state">No hay productos destacados disponibles por ahora.</div>
+        )}
+
+        {!loading && !error && productos.length > 0 && (
+          <div className="home-products-grid">
+            {productos.map((producto, index) => {
+              const precio = obtenerPrecioProducto(producto, esB2B)
+              const stockBadge = obtenerBadgeStock(producto)
+              const sinStock = obtenerStock(producto) <= 0
+
+              return (
+                <article className="home-product-card" key={producto.id} style={{ animationDelay: `${index * 45}ms` }}>
+                  <div className="product-image-placeholder">
+                    <span>{producto.categoria?.nombre?.slice(0, 1) || 'M'}</span>
+                  </div>
+                  <div className="product-card-body">
+                    <div className="product-card-meta">
+                      <span>{producto.categoria?.nombre || 'Insumo medico'}</span>
+                      <span className={`stock-badge ${stockBadge.className}`}>{stockBadge.label}</span>
+                    </div>
+                    <h3>{producto.nombre}</h3>
+                    <p className="product-card-description">
+                      {producto.descripcion || 'Producto medico disponible en catalogo Medistock.'}
+                    </p>
+                    <div className="product-card-price">
+                      <strong>{formatearPrecio(precio)}</strong>
+                    </div>
+                  </div>
+                  <div className="product-card-actions">
+                    <Link className="btn-outline" to={`/producto/${producto.id}`}>
+                      Ver detalle
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => agregarItem(producto)}
+                      disabled={sinStock || !usuarioPuedeComprar}
+                      title={!usuarioPuedeComprar ? mensajeNoCompra : ''}
+                    >
+                      Agregar
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="home-section home-categories-section">
+        <div className="section-heading">
+          <h2>Categorias para encontrar rapido</h2>
+        </div>
+
+        <div className="home-categories-grid">
+          {categoriasVisuales.map((categoria) => (
+            <Link
+              key={categoria.titulo}
+              className={`home-category-card ${categoria.clase}`}
+              to={`/catalogo?search=${encodeURIComponent(categoria.busqueda)}`}
+            >
+              <span className="category-icon">{categoria.icono}</span>
+              <strong>{categoria.titulo}</strong>
+              <small>{categoria.texto}</small>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-section home-offers-section">
+        <div className="section-heading offers-heading">
+          <div>
+            <h2>Promociones visuales</h2>
+          </div>
+          <Link className="btn-outline" to="/catalogo">
+            Ver todas las ofertas
+          </Link>
+        </div>
+
+        {!loading && !error && ofertasVisuales.length > 0 ? (
+          <div className="home-offers-track" aria-label="Carrusel de ofertas">
+            {ofertasVisuales.map((producto, index) => {
+              // DEMO visual: el descuento se deriva en frontend solo para presentar la seccion de ofertas.
+              const oferta = crearOfertaVisual(producto, index, esB2B)
+              const sinStock = obtenerStock(producto) <= 0
+
+              return (
+                <article className="home-offer-card" key={producto.id}>
+                  <span className="offer-badge">-{oferta.descuento}%</span>
+                  <div className="offer-image">
+                    <span>{producto.nombre?.slice(0, 1) || '+'}</span>
+                  </div>
+                  <div className="offer-content">
+                    <small>{producto.categoria?.nombre || 'Insumo medico'}</small>
+                    <h3>{producto.nombre}</h3>
+                    <div className="offer-prices">
+                      {oferta.precioAnterior > 0 && <span>{formatearPrecio(oferta.precioAnterior)}</span>}
+                      <strong>{formatearPrecio(oferta.precioActual)}</strong>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => agregarItem(producto)}
+                    disabled={sinStock || !usuarioPuedeComprar}
+                    title={!usuarioPuedeComprar ? mensajeNoCompra : ''}
+                  >
+                    Agregar al carro
+                  </button>
+                </article>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="home-state">Las ofertas se mostraran cuando el catalogo tenga productos disponibles.</div>
+        )}
+      </section>
+
+      <section className="home-benefits" aria-label="Beneficios Medistock">
+        {beneficios.map((beneficio) => (
+          <article key={beneficio.titulo}>
+            <strong>{beneficio.titulo}</strong>
+            <p>{beneficio.texto}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="home-platform-banner">
+        <div>
+          <span>Integracion de Plataformas</span>
+          <h2>Un flujo completo desde catalogo hasta tracking</h2>
+          <p>
+            Medistock integra frontend, backend, base de datos, pedidos, pagos y logistica en un prototipo funcional
+            preparado para demostracion academica.
+          </p>
+        </div>
+        <Link to="/panel">Ir a mi panel</Link>
+      </section>
+
+      <Footer />
+    </main>
+  )
+}

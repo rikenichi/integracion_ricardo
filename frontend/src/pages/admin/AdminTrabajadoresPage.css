@@ -1,0 +1,135 @@
+.admin-trabajadores-page {
+  display: grid;
+  gap: 20px;
+}
+
+.admin-trabajadores-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+.admin-trabajadores-kicker {
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+.admin-trabajadores-header .page-title {
+  margin-bottom: 6px;
+}
+
+.admin-trabajadores-toolbar,
+.admin-trabajadores-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.admin-trabajadores-section-header {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+}
+
+.admin-trabajadores-section-header h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.admin-trabajadores-section-header span {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.admin-trabajadores-form-card {
+  overflow: hidden;
+}
+
+.admin-trabajadores-note {
+  background: #eef7ff;
+  border-bottom: 1px solid var(--color-border);
+  color: #17527a;
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.45;
+  padding: 14px 20px;
+}
+
+.admin-trabajadores-form {
+  align-items: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 20px;
+}
+
+.admin-trabajadores-form label {
+  color: var(--color-text);
+  display: grid;
+  font-size: 0.84rem;
+  font-weight: 800;
+  gap: 6px;
+}
+
+.admin-trabajadores-form input,
+.admin-trabajadores-form select {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 500;
+  min-height: 44px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.admin-trabajadores-form small {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.admin-trabajadores-actions {
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.admin-trabajadores-empty,
+.admin-trabajadores-acceso {
+  padding: 24px;
+}
+
+.admin-trabajadores-acceso h1 {
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .admin-trabajadores-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-trabajadores-header {
+    flex-direction: column;
+  }
+
+  .admin-trabajadores-toolbar,
+  .admin-trabajadores-actions {
+    justify-content: flex-start;
+  }
+
+  .admin-trabajadores-form {
+    grid-template-columns: 1fr;
+  }
+}

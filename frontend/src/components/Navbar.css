@@ -1,0 +1,233 @@
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+}
+
+.topbar {
+  min-height: 34px;
+  padding: 7px 24px;
+  background: #0f766e;
+  color: #ecfeff;
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.main-header {
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 78px;
+  padding: 14px 20px;
+  display: grid;
+  grid-template-columns: 240px minmax(260px, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text);
+}
+
+.header-brand:hover,
+.quick-link:hover,
+.cart-link:hover {
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+.header-brand strong,
+.header-brand small {
+  display: block;
+}
+
+.header-brand strong {
+  letter-spacing: 0;
+  font-size: 1.05rem;
+}
+
+.header-brand small {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.header-search {
+  display: flex;
+  min-width: 0;
+}
+
+.header-search input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+  padding: 11px 14px;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.header-search input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0,119,182,0.1);
+}
+
+.header-search button {
+  border: 0;
+  border-radius: 0 8px 8px 0;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0 18px;
+  font-weight: 700;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.quick-link {
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.quick-link span {
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.quick-link small {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.cart-link {
+  position: relative;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 9px 13px;
+  font-weight: 700;
+  background: #f8fafc;
+}
+
+.register-link {
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--color-primary);
+  font-size: 0.84rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.register-link:hover {
+  background: #e0f2fe;
+  text-decoration: none;
+}
+
+.cart-link strong {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--color-warning);
+  color: #1e293b;
+  font-size: 0.72rem;
+}
+
+.category-nav {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px 12px;
+  display: flex;
+  gap: 22px;
+  overflow-x: auto;
+}
+
+.category-nav a {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 6px 12px;
+  border-radius: 999px;
+  transition: background 0.18s, color 0.18s;
+}
+
+.category-nav a:hover {
+  color: var(--color-text);
+  background: rgba(72, 202, 228, 0.18);
+  text-decoration: none;
+}
+
+.category-nav a.nav-activo {
+  background: var(--color-secondary);
+  color: var(--color-text);
+  box-shadow: 0 2px 6px rgba(72, 202, 228, 0.35);
+}
+
+.category-nav a.nav-activo:hover {
+  background: var(--color-secondary);
+}
+
+@media (max-width: 900px) {
+  .main-header {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .header-actions {
+    justify-content: space-between;
+  }
+
+  .topbar {
+    justify-content: flex-start;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar {
+    display: none;
+  }
+
+  .main-header {
+    padding: 12px 16px;
+  }
+
+  .header-search {
+    order: 3;
+  }
+
+  .category-nav {
+    padding: 0 16px 10px;
+  }
+}

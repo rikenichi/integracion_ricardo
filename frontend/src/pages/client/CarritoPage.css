@@ -1,0 +1,101 @@
+.carrito-layout {
+  display: grid; grid-template-columns: 1fr 340px; gap: 24px;
+}
+@media (max-width: 800px) { .carrito-layout { grid-template-columns: 1fr; } }
+
+.item-row {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 12px; padding: 14px 16px;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  animation: cardEnter 0.25s ease both;
+}
+.item-row:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0,119,182,0.22);
+  box-shadow: var(--shadow-md);
+}
+.item-icon { font-size: 2rem; flex-shrink: 0; }
+.item-info { flex: 1; }
+.item-nombre { font-weight: 600; margin-bottom: 2px; }
+.item-precio { color: var(--color-primary); font-weight: 500; }
+.item-cantidad { display: flex; align-items: center; gap: 10px; font-weight: 600; min-width: 90px; justify-content: center; }
+.item-subtotal { font-weight: 700; min-width: 100px; text-align: right; }
+
+.resumen-linea { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.9rem; }
+.resumen-linea-mini { font-size: 0.82rem; padding: 3px 0; color: var(--color-text-muted); }
+.resumen-descuento { color: var(--color-success); }
+.resumen-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 1.15rem; padding: 6px 0 2px; }
+.resumen-total span:last-child { color: var(--color-primary); }
+
+.resumen-iva-detalle {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+}
+.resumen-iva-nota {
+  font-size: 0.75rem;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.resumen-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--color-text);
+}
+
+.resumen-despacho-opciones {
+  display: grid;
+  gap: 8px;
+}
+
+.resumen-radio {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.resumen-radio:hover {
+  border-color: var(--color-primary);
+}
+.resumen-radio-activo {
+  border-color: var(--color-primary);
+  background: rgba(0, 119, 182, 0.06);
+}
+.resumen-radio input[type="radio"] {
+  margin-top: 3px;
+  accent-color: var(--color-primary);
+}
+.resumen-radio strong {
+  display: block;
+  font-size: 0.88rem;
+  margin-bottom: 1px;
+}
+.resumen-radio small {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.carrito-resumen {
+  position: sticky;
+  top: 18px;
+  border-color: rgba(0,119,182,0.14);
+  box-shadow: var(--shadow-md);
+}
+
+.carrito-resumen .btn-lg {
+  margin-top: 10px;
+}
+
+@media (max-width: 800px) {
+  .carrito-resumen {
+    position: static;
+  }
+}

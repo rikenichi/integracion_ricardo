@@ -1,0 +1,27 @@
+.ui-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+}
+.ui-empty-state-compact {
+  padding: 24px 16px;
+}
+.ui-empty-state-icon {
+  font-size: 3rem;
+  color: var(--color-primary);
+  margin-bottom: 12px;
+  line-height: 1;
+}
+.ui-empty-state-compact .ui-empty-state-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+.ui-empty-state h3 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+.ui-empty-state-action {
+  margin-top: 18px;
+}
