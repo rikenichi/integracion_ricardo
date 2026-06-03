@@ -1,3 +1,5 @@
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -49,4 +51,18 @@ class CatalogoProductoView(APIView):
 
         productos = Producto.objects.filter(activo=True).order_by('id')
         serializer = ProductoSerializer(productos, many=True)
+        return Response(serializer.data)
+
+
+class ProductoDetalleView(APIView):
+    def get(self, request, codigo):
+        filtro = Q(codigo=codigo) | Q(sku=codigo)
+        if str(codigo).isdigit():
+            filtro |= Q(id=int(codigo))
+
+        producto = get_object_or_404(
+            Producto.objects.filter(activo=True),
+            filtro,
+        )
+        serializer = ProductoSerializer(producto)
         return Response(serializer.data)
