@@ -65,7 +65,7 @@ export default function App() {
             <Route path="/contacto" element={<ContactoPage />} />
             <Route path="/catalogo" element={<CatalogoPage />} />
             <Route path="/producto/:codigo" element={<ProductoDetallePage />} />
-            <Route path="/carrito" element={<RutaSoloCompradores><CarritoPage /></RutaSoloCompradores>} />
+            <Route path="/carrito" element={<CarritoPage />} />
             <Route path="/confirmar-pedido" element={<RutaSoloCompradores><ConfirmacionPedidoPage /></RutaSoloCompradores>} />
             <Route path="/resultado-pago/:pedidoId" element={<RutaSoloCompradores><ResultadoPagoPage /></RutaSoloCompradores>} />
             <Route path="/resultado-pago" element={<WebpayResultadoPage />} />

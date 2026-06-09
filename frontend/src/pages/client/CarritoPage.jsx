@@ -20,9 +20,18 @@ export default function CarritoPage() {
   const navigate = useNavigate()
   const esB2B = usuario?.rol === 'cliente_b2b'
   const usuarioPuedeComprar = puedeComprar(usuario)
+  const usuarioAutenticadoSinPermiso = Boolean(usuario) && !usuarioPuedeComprar
   const mensajeNoCompra = razonNoCompra(usuario)
 
   const { subtotal, descuento, neto, iva, total } = calcularResumen({ esB2B })
+
+  const confirmarPedido = () => {
+    if (!usuario) {
+      navigate('/login', { state: { from: '/confirmar-pedido' } })
+      return
+    }
+    navigate('/confirmar-pedido')
+  }
 
   if (items.length === 0) {
     return (
@@ -81,7 +90,7 @@ export default function CarritoPage() {
         <div className="carrito-resumen card">
           <h3 className="section-title">Resumen del pedido</h3>
 
-          {!usuarioPuedeComprar && (
+          {usuarioAutenticadoSinPermiso && (
             <div className="alert alert-warning">
               {mensajeNoCompra}
             </div>
@@ -179,9 +188,9 @@ export default function CarritoPage() {
             variant="primary"
             size="lg"
             block
-            onClick={() => navigate('/confirmar-pedido')}
+            onClick={confirmarPedido}
             className="mt-2"
-            disabled={!usuarioPuedeComprar}
+            disabled={usuarioAutenticadoSinPermiso}
           >
             Confirmar pedido →
           </Button>
