@@ -66,3 +66,20 @@ class ProductoDetalleView(APIView):
         )
         serializer = ProductoSerializer(producto)
         return Response(serializer.data)
+
+
+class CategoriaProductoView(APIView):
+    def get(self, request):
+        nombres = (
+            Producto.objects
+            .filter(activo=True)
+            .exclude(categoria_nombre='')
+            .values_list('categoria_nombre', flat=True)
+            .distinct()
+            .order_by('categoria_nombre')
+        )
+        categorias = [
+            {'id': index, 'nombre': nombre}
+            for index, nombre in enumerate(nombres, start=1)
+        ]
+        return Response(categorias)
