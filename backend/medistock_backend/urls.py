@@ -3,7 +3,13 @@ from django.contrib import admin
 
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from accounts.views import DireccionEntregaView, LogoutView, PedidoCreateView, PerfilView
+from accounts.views import (
+    DireccionEntregaView,
+    LogoutView,
+    PedidoCreateView,
+    PedidoDetailView,
+    PerfilView,
+)
 from inventory.views import CatalogoProductoView, CategoriaProductoView, ProductoDetalleView
 from locations.views import (
     ComunaListView,
@@ -27,4 +33,5 @@ urlpatterns = [
     path('api/locations/sucursales/<int:sucursal_id>/', SucursalDetailView.as_view(), name='locations-sucursal'),
     path('api/logistics/cotizar/', CotizarDespachoView.as_view(), name='logistics-cotizar'),
     path('api/orders/pedidos/', PedidoCreateView.as_view(), name='orders-pedidos-create'),
+    path('api/orders/pedidos/<int:pedido_id>/', PedidoDetailView.as_view(), name='orders-pedidos-detail'),
 ]

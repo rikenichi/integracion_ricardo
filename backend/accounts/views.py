@@ -1,6 +1,3 @@
-from decimal import Decimal
-from time import time
-
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -8,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from inventory.models import Producto
+from .models import Pedido
 
 
 def perfil_usuario(usuario):
@@ -74,6 +72,33 @@ class DireccionEntregaView(APIView):
 class PedidoCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @staticmethod
+    def representar(pedido):
+        return {
+            'id': pedido.id,
+            'usuario_id': pedido.usuario_id,
+            'estado': pedido.estado,
+            'estado_display': 'Pendiente de pago',
+            'subtotal': pedido.subtotal,
+            'descuento': 0,
+            'total': pedido.total,
+            'monto_total': pedido.total,
+            'detalles': pedido.detalles,
+            'items': pedido.detalles,
+            'pago': pedido.pago,
+            'despacho': pedido.despacho,
+            'costo_envio': pedido.despacho.get('costo_envio', 0),
+            'sucursal_origen_id': pedido.datos.get('sucursal_origen_id'),
+            'direccion_entrega_id': pedido.datos.get('direccion_entrega_id'),
+            'tipo_venta': pedido.datos.get('tipo_venta'),
+            'tipo_despacho': pedido.datos.get('tipo_despacho'),
+            'prioridad_medica': pedido.datos.get('prioridad_medica'),
+            'fecha_requerida_entrega': pedido.datos.get('fecha_requerida_entrega'),
+            'observacion': pedido.datos.get('observacion', ''),
+            'creado_en': pedido.creado_en,
+            'actualizado_en': pedido.actualizado_en,
+        }
+
     def post(self, request):
         detalles = request.data.get('detalles')
 
@@ -84,7 +109,7 @@ class PedidoCreateView(APIView):
             )
 
         detalles_respuesta = []
-        total = Decimal('0')
+        total = 0
 
         for detalle in detalles:
             producto_id = detalle.get('producto_id')
@@ -113,6 +138,8 @@ class PedidoCreateView(APIView):
             detalles_respuesta.append(
                 {
                     'producto_id': producto.id,
+                    'producto_codigo': producto.codigo,
+                    'producto_nombre': producto.nombre,
                     'nombre': producto.nombre,
                     'cantidad': cantidad,
                     'precio_unitario': producto.precio_b2c,
@@ -120,14 +147,17 @@ class PedidoCreateView(APIView):
                 }
             )
 
-        pedido_id = int(time() * 1000)
-
-        return Response(
-            {
-                'id': pedido_id,
-                'usuario_id': request.user.id,
-                'estado': 'PENDIENTE_PAGO',
-                'total': total,
+        pedido = Pedido.objects.create(
+            usuario=request.user,
+            subtotal=total,
+            total=total,
+            detalles=detalles_respuesta,
+            pago={'estado': 'NO_INICIADO', 'modo': 'SIMULADO'},
+            despacho={
+                'estado': 'COTIZADO',
+                'sucursal_origen_id': request.data.get('sucursal_origen_id'),
+            },
+            datos={
                 'sucursal_origen_id': request.data.get('sucursal_origen_id'),
                 'direccion_entrega_id': request.data.get('direccion_entrega_id'),
                 'tipo_venta': request.data.get('tipo_venta', 'WEBPAY'),
@@ -135,14 +165,29 @@ class PedidoCreateView(APIView):
                 'prioridad_medica': request.data.get('prioridad_medica', 'NORMAL'),
                 'fecha_requerida_entrega': request.data.get('fecha_requerida_entrega'),
                 'observacion': request.data.get('observacion', ''),
-                'detalles': detalles_respuesta,
-                'pago': {
-                    'estado': 'NO_INICIADO',
-                    'modo': 'SIMULADO',
-                },
             },
-            status=status.HTTP_201_CREATED,
         )
+
+        return Response(self.representar(pedido), status=status.HTTP_201_CREATED)
+
+
+class PedidoDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pedido_id):
+        pedidos = Pedido.objects.all()
+        if not request.user.is_superuser:
+            pedidos = pedidos.filter(usuario=request.user)
+
+        try:
+            pedido = pedidos.get(id=pedido_id)
+        except Pedido.DoesNotExist:
+            return Response(
+                {'detail': 'Pedido no encontrado.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(PedidoCreateView.representar(pedido))
 
 
 class LogoutView(APIView):
