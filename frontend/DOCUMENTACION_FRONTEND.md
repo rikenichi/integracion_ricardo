@@ -6,6 +6,52 @@
 **Responsable:** Equipo frontend MEDISTOCK
 **Estado del documento:** Vigente para revisión técnica y académica
 
+# NOTA
+## Nota de actualización para versión individual
+
+Esta documentación proviene de una versión anterior y más completa de MEDISTOCK.  
+La versión actual del proyecto es una implementación individual y reducida para la asignatura Integración de Plataformas.
+
+No todos los endpoints documentados están implementados actualmente en el backend individual.
+
+### Estado real actual confirmado
+
+Backend desplegado en Railway con Django REST Framework y MySQL Railway.
+
+Endpoints confirmados funcionando:
+
+- `GET /api/inventory/catalogo/`
+- `GET /api/inventory/public/categorias/`
+- `GET /api/inventory/public/productos/<codigo>/`
+- `POST /api/accounts/login/`
+- `POST /api/accounts/login/refresh/`
+- `GET /api/accounts/perfil/me/`
+- `POST /api/accounts/logout/`
+
+Frontend confirmado funcionando:
+
+- Home carga productos desde Railway.
+- Catálogo carga productos desde Railway.
+- Categorías públicas cargan desde Railway.
+- CORS está configurado correctamente.
+- El frontend local usa el backend remoto Railway.
+
+### Advertencia para desarrollo
+
+Antes de modificar una pantalla o servicio, verificar si el endpoint existe realmente en el backend actual.
+
+Si una pantalla consume endpoints heredados que aún no existen, no crear todos los endpoints de golpe.  
+Primero decidir si corresponde:
+
+1. Adaptar el frontend al backend actual.
+2. Crear un endpoint mínimo.
+3. Marcar la pantalla como demo controlado.
+4. Posponer la funcionalidad.
+
+No modificar configuración de Railway, MySQL, CORS, `ALLOWED_HOSTS`, `wsgi.py`, `gunicorn` ni comandos de despliegue si la tarea es solo frontend.
+
+# FIN NOTA
+
 ## Tabla de contenidos
 
 1. [Visión general](#visión-general)
