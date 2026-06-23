@@ -5,3 +5,4 @@ python-dotenv==1.0.1
 djangorestframework-simplejwt==5.3.1
 gunicorn
 django-cors-headers
+whitenoise
