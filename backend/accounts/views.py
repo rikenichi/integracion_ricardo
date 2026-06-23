@@ -29,6 +29,43 @@ class PerfilView(APIView):
         return Response(perfil_usuario(request.user))
 
 
+class DireccionEntregaView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        direccion = str(request.data.get('direccion', '')).strip()
+        comuna = request.data.get('comuna')
+
+        if not direccion or not comuna:
+            return Response(
+                {'detail': 'Direccion y comuna son requeridas.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            comuna_id = int(comuna)
+        except (TypeError, ValueError):
+            return Response(
+                {'detail': 'La comuna debe ser valida.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                'id': (request.user.id * 100000) + comuna_id,
+                'direccion': direccion,
+                'num_direccion': request.data.get('num_direccion', ''),
+                'detalle_direccion': request.data.get('detalle_direccion', ''),
+                'comuna': comuna,
+                'referencia': request.data.get('referencia', ''),
+                'nombre_receptor': request.data.get('nombre_receptor', ''),
+                'telefono_receptor': request.data.get('telefono_receptor', ''),
+                'es_principal': bool(request.data.get('es_principal', False)),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 

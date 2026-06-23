@@ -48,6 +48,28 @@ class ComunaListView(APIView):
         return Response(comunas)
 
 
+class SucursalDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, sucursal_id):
+        if sucursal_id != 1:
+            return Response(
+                {"detail": "Sucursal no encontrada."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(
+            {
+                "id": 1,
+                "nombre": "Sucursal Medistock Santiago",
+                "direccion": "Santiago Centro",
+                "comuna_nombre": "Santiago",
+                "region_nombre": "Región Metropolitana",
+                "county_code": "STGO",
+            }
+        )
+
+
 class CotizarDespachoView(APIView):
     permission_classes = [AllowAny]
 
