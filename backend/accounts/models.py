@@ -2,6 +2,44 @@ from django.conf import settings
 from django.db import models
 
 
+class PerfilCliente(models.Model):
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='perfil_cliente',
+    )
+    rut = models.CharField(max_length=20, blank=True)
+    telefono = models.CharField(max_length=30, blank=True)
+    tipo_cliente = models.CharField(max_length=20, default='PARTICULAR')
+    datos_institucion = models.JSONField(null=True, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'Perfil de {self.usuario.username}'
+
+
+class DireccionEntrega(models.Model):
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='direcciones_entrega',
+    )
+    direccion = models.CharField(max_length=180)
+    num_direccion = models.CharField(max_length=30, blank=True)
+    detalle_direccion = models.CharField(max_length=120, blank=True)
+    comuna = models.CharField(max_length=30)
+    referencia = models.CharField(max_length=180, blank=True)
+    nombre_receptor = models.CharField(max_length=120, blank=True)
+    telefono_receptor = models.CharField(max_length=30, blank=True)
+    es_principal = models.BooleanField(default=False)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.direccion} - {self.usuario.username}'
+
+
 class Pedido(models.Model):
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,

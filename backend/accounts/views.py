@@ -1,6 +1,10 @@
 import os
 from urllib.parse import urlencode
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.http import HttpResponseRedirect
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -14,7 +18,10 @@ from transbank.common.options import WebpayOptions
 from transbank.webpay.webpay_plus.transaction import Transaction
 
 from inventory.models import Producto
-from .models import EnvioPedido, Pedido
+from .models import DireccionEntrega, EnvioPedido, Pedido, PerfilCliente
+
+
+User = get_user_model()
 
 
 def webpay_transaction():
@@ -48,8 +55,31 @@ def redirigir_resultado_webpay(**params):
     return HttpResponseRedirect(f'{frontend_url}{separator}{urlencode(params)}')
 
 
+def representar_direccion(direccion):
+    if not direccion:
+        return None
+
+    return {
+        'id': direccion.id,
+        'direccion': direccion.direccion,
+        'num_direccion': direccion.num_direccion,
+        'detalle_direccion': direccion.detalle_direccion,
+        'comuna': direccion.comuna,
+        'comuna_id': direccion.comuna,
+        'referencia': direccion.referencia,
+        'nombre_receptor': direccion.nombre_receptor,
+        'telefono_receptor': direccion.telefono_receptor,
+        'es_principal': direccion.es_principal,
+    }
+
+
 def perfil_usuario(usuario):
     es_administrador = usuario.is_staff or usuario.is_superuser
+    perfil = getattr(usuario, 'perfil_cliente', None)
+    direccion_principal = (
+        usuario.direcciones_entrega.filter(es_principal=True).first()
+        or usuario.direcciones_entrega.first()
+    )
     return {
         'rol': 'ADMINISTRADOR' if es_administrador else 'CLIENTE',
         'datos': {
@@ -60,9 +90,113 @@ def perfil_usuario(usuario):
                 'first_name': usuario.first_name,
                 'last_name': usuario.last_name,
                 'is_staff': es_administrador,
-            }
+            },
+            'rut': perfil.rut if perfil else '',
+            'telefono': perfil.telefono if perfil else '',
+            'tipo_cliente': perfil.tipo_cliente if perfil else 'PARTICULAR',
+            'datos_institucion': perfil.datos_institucion if perfil else None,
+            'direccion_principal': representar_direccion(direccion_principal),
         },
     }
+
+
+class RegistroClienteView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        datos_usuario = request.data.get('usuario')
+        if not isinstance(datos_usuario, dict):
+            return Response(
+                {'usuario': ['Los datos del usuario son requeridos.']},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        username = str(datos_usuario.get('username', '')).strip()
+        email = str(datos_usuario.get('email', '')).strip()
+        password = datos_usuario.get('password', '')
+        password2 = datos_usuario.get('password2', '')
+
+        errores_usuario = {}
+        errores = {}
+        if not username:
+            errores_usuario['username'] = ['Este campo es requerido.']
+        if not email:
+            errores_usuario['email'] = ['Este campo es requerido.']
+        if password != password2:
+            errores_usuario['password2'] = ['Las contraseñas no coinciden.']
+        if User.objects.filter(username__iexact=username).exists():
+            errores_usuario['username'] = ['Ya existe un usuario con este nombre.']
+        if User.objects.filter(email__iexact=email).exists():
+            errores_usuario['email'] = ['Ya existe una cuenta con este correo.']
+
+        try:
+            validate_password(password)
+        except ValidationError as exc:
+            errores_usuario['password'] = list(exc.messages)
+
+        direccion_data = request.data.get('direccion_entrega')
+        if not isinstance(direccion_data, dict):
+            errores['direccion_entrega'] = {
+                'direccion': ['La dirección de entrega es requerida.']
+            }
+        elif not str(direccion_data.get('direccion', '')).strip():
+            errores['direccion_entrega'] = {
+                'direccion': ['La dirección es requerida.']
+            }
+        elif not direccion_data.get('comuna'):
+            errores['direccion_entrega'] = {
+                'comuna': ['La comuna es requerida.']
+            }
+
+        if errores_usuario:
+            errores['usuario'] = errores_usuario
+        if errores:
+            return Response(
+                errores,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            usuario = User.objects.create_user(
+                username=username,
+                email=email,
+                first_name=str(datos_usuario.get('first_name', '')).strip(),
+                last_name=str(datos_usuario.get('last_name', '')).strip(),
+                password=password,
+            )
+            PerfilCliente.objects.create(
+                usuario=usuario,
+                rut=str(request.data.get('rut') or '').strip(),
+                telefono=str(request.data.get('telefono') or '').strip(),
+                tipo_cliente=str(
+                    request.data.get('tipo_cliente') or 'PARTICULAR'
+                ).strip().upper(),
+                datos_institucion=request.data.get('datos_institucion'),
+            )
+            DireccionEntrega.objects.create(
+                usuario=usuario,
+                direccion=str(direccion_data.get('direccion', '')).strip(),
+                num_direccion=str(
+                    direccion_data.get('num_direccion', '')
+                ).strip(),
+                detalle_direccion=str(
+                    direccion_data.get('detalle_direccion', '')
+                ).strip(),
+                comuna=str(direccion_data.get('comuna', '')).strip(),
+                referencia=str(direccion_data.get('referencia', '')).strip(),
+                nombre_receptor=str(
+                    direccion_data.get('nombre_receptor', '')
+                ).strip(),
+                telefono_receptor=str(
+                    direccion_data.get('telefono_receptor', '')
+                ).strip(),
+                es_principal=True,
+            )
+
+        return Response(
+            perfil_usuario(usuario),
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class PerfilView(APIView):
@@ -71,9 +205,85 @@ class PerfilView(APIView):
     def get(self, request):
         return Response(perfil_usuario(request.user))
 
+    def patch(self, request):
+        usuario = request.user
+        email = request.data.get('email')
+
+        if email is not None:
+            email = str(email).strip()
+            if not email:
+                return Response(
+                    {'email': ['Este campo no puede quedar vacío.']},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if User.objects.filter(email__iexact=email).exclude(
+                id=usuario.id
+            ).exists():
+                return Response(
+                    {'email': ['Ya existe una cuenta con este correo.']},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            usuario.email = email
+
+        for campo in ('first_name', 'last_name'):
+            if campo in request.data:
+                setattr(usuario, campo, str(request.data.get(campo, '')).strip())
+        usuario.save(update_fields=['email', 'first_name', 'last_name'])
+
+        perfil, _ = PerfilCliente.objects.get_or_create(usuario=usuario)
+        for campo in ('rut', 'telefono', 'tipo_cliente'):
+            if campo in request.data:
+                valor = str(request.data.get(campo) or '').strip()
+                if campo == 'tipo_cliente':
+                    valor = valor.upper()
+                setattr(perfil, campo, valor)
+        if 'datos_institucion' in request.data:
+            perfil.datos_institucion = request.data.get('datos_institucion')
+        perfil.save()
+
+        direccion_data = request.data.get('direccion_principal')
+        if isinstance(direccion_data, dict):
+            direccion = (
+                usuario.direcciones_entrega.filter(es_principal=True).first()
+                or usuario.direcciones_entrega.first()
+                or DireccionEntrega(usuario=usuario)
+            )
+            for campo in (
+                'direccion',
+                'num_direccion',
+                'detalle_direccion',
+                'comuna',
+                'referencia',
+                'nombre_receptor',
+                'telefono_receptor',
+            ):
+                if campo in direccion_data:
+                    setattr(
+                        direccion,
+                        campo,
+                        str(direccion_data.get(campo) or '').strip(),
+                    )
+            direccion.es_principal = True
+            direccion.save()
+            usuario.direcciones_entrega.exclude(id=direccion.id).update(
+                es_principal=False
+            )
+
+        return Response(perfil_usuario(usuario))
+
 
 class DireccionEntregaView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        direcciones = request.user.direcciones_entrega.order_by(
+            '-es_principal',
+            '-creado_en',
+        )
+        return Response([
+            representar_direccion(direccion)
+            for direccion in direcciones
+        ])
 
     def post(self, request):
         direccion = str(request.data.get('direccion', '')).strip()
@@ -85,26 +295,30 @@ class DireccionEntregaView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        try:
-            comuna_id = int(comuna)
-        except (TypeError, ValueError):
-            return Response(
-                {'detail': 'La comuna debe ser valida.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        es_principal = bool(request.data.get('es_principal', False))
+        if es_principal:
+            request.user.direcciones_entrega.update(es_principal=False)
+
+        objeto = DireccionEntrega.objects.create(
+            usuario=request.user,
+            direccion=direccion,
+            num_direccion=str(request.data.get('num_direccion', '')).strip(),
+            detalle_direccion=str(
+                request.data.get('detalle_direccion', '')
+            ).strip(),
+            comuna=str(comuna).strip(),
+            referencia=str(request.data.get('referencia', '')).strip(),
+            nombre_receptor=str(
+                request.data.get('nombre_receptor', '')
+            ).strip(),
+            telefono_receptor=str(
+                request.data.get('telefono_receptor', '')
+            ).strip(),
+            es_principal=es_principal,
+        )
 
         return Response(
-            {
-                'id': (request.user.id * 100000) + comuna_id,
-                'direccion': direccion,
-                'num_direccion': request.data.get('num_direccion', ''),
-                'detalle_direccion': request.data.get('detalle_direccion', ''),
-                'comuna': comuna,
-                'referencia': request.data.get('referencia', ''),
-                'nombre_receptor': request.data.get('nombre_receptor', ''),
-                'telefono_receptor': request.data.get('telefono_receptor', ''),
-                'es_principal': bool(request.data.get('es_principal', False)),
-            },
+            representar_direccion(objeto),
             status=status.HTTP_201_CREATED,
         )
 
