@@ -627,8 +627,16 @@ export const generarDteDesdePedido = (pedidoId) =>
   })
 
 // --- WebPay Plus (Transbank, ambiente TEST) ---
-export const iniciarWebpay = (pedidoId) =>
-  api.post('/payments/webpay/iniciar/', { pedido_id: pedidoId })
+export const iniciarWebpay = (pedidoId) => {
+  const accessToken = localStorage.getItem('access_token')
+  return api.post(
+    '/payments/webpay/iniciar/',
+    { pedido_id: pedidoId },
+    accessToken
+      ? { headers: { Authorization: `Bearer ${accessToken}` } }
+      : undefined,
+  )
+}
 export const confirmarWebpay = (token) =>
   api.get('/payments/webpay/commit/', { params: { token_ws: token } })
 export const obtenerEstadoWebpay = (token) =>
