@@ -1,10 +1,10 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --color-primary: #0077b6;
-  --color-primary-dark: #005f8e;
-  --color-secondary: #48cae4;
-  --color-success: #2d6a4f;
+  --color-primary: #16824b;
+  --color-primary-dark: #0d6037;
+  --color-secondary: #d8f3e4;
+  --color-success: #16824b;
   --color-danger: #c1121f;
   --color-warning: #f4a261;
   --color-bg: #f8fafc;
@@ -39,8 +39,8 @@ button { cursor: pointer; font-family: inherit; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn-primary { background: var(--color-primary); color: #fff; }
 .btn-primary:hover:not(:disabled) { background: var(--color-primary-dark); box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.btn-secondary { background: var(--color-border); color: var(--color-text); }
-.btn-secondary:hover:not(:disabled) { background: #cbd5e1; transform: translateY(-1px); }
+.btn-secondary { background: #fff; color: var(--color-primary-dark); border: 1px solid #9fcdb4; }
+.btn-secondary:hover:not(:disabled) { background: #edf8f1; border-color: var(--color-primary); transform: translateY(-1px); }
 .btn-danger  { background: var(--color-danger); color: #fff; }
 .btn-success { background: var(--color-success); color: #fff; }
 .btn-sm { padding: 5px 12px; font-size: 0.82rem; }
@@ -83,7 +83,7 @@ button { cursor: pointer; font-family: inherit; }
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none; border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(0,119,182,0.1);
+  box-shadow: 0 0 0 3px rgba(22,130,75,0.14);
 }
 
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }

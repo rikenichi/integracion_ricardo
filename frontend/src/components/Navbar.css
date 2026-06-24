@@ -10,8 +10,8 @@
 .topbar {
   min-height: 34px;
   padding: 7px 24px;
-  background: #0f766e;
-  color: #ecfeff;
+  background: #0d6037;
+  color: #f0fdf4;
   display: flex;
   justify-content: center;
   gap: 28px;
@@ -34,7 +34,7 @@
 .header-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: var(--color-text);
 }
 
@@ -45,15 +45,17 @@
 }
 
 .brand-mark {
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
+  width: 46px;
+  height: 46px;
+  border-radius: 7px;
   display: grid;
   place-items: center;
-  background: var(--color-primary);
+  background: #16824b;
   color: #fff;
-  font-weight: 800;
-  font-size: 1.2rem;
+  border: 2px solid #d8f3e4;
+  box-shadow: 0 5px 14px rgba(13, 96, 55, 0.2);
+  font-weight: 900;
+  font-size: 1.25rem;
 }
 
 .header-brand strong,
@@ -63,7 +65,9 @@
 
 .header-brand strong {
   letter-spacing: 0;
-  font-size: 1.05rem;
+  color: #0d6037;
+  font-size: 1.12rem;
+  line-height: 1.05;
 }
 
 .header-brand small {
@@ -89,7 +93,7 @@
 .header-search input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(0,119,182,0.1);
+  box-shadow: 0 0 0 3px rgba(22,130,75,0.14);
 }
 
 .header-search button {
@@ -145,7 +149,7 @@
 }
 
 .register-link:hover {
-  background: #e0f2fe;
+  background: #edf8f1;
   text-decoration: none;
 }
 
@@ -183,15 +187,15 @@
 }
 
 .category-nav a:hover {
-  color: var(--color-text);
-  background: rgba(72, 202, 228, 0.18);
+  color: var(--color-primary-dark);
+  background: #edf8f1;
   text-decoration: none;
 }
 
 .category-nav a.nav-activo {
   background: var(--color-secondary);
-  color: var(--color-text);
-  box-shadow: 0 2px 6px rgba(72, 202, 228, 0.35);
+  color: var(--color-primary-dark);
+  box-shadow: inset 0 0 0 1px #9fcdb4;
 }
 
 .category-nav a.nav-activo:hover {

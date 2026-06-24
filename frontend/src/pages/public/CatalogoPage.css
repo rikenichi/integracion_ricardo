@@ -4,11 +4,9 @@
   margin-bottom: 24px;
   padding: 28px;
   min-height: 230px;
-  border: 1px solid rgba(0, 119, 182, 0.18);
+  border: 1px solid rgba(22, 130, 75, 0.2);
   border-radius: var(--radius);
-  background:
-    radial-gradient(circle at 86% 18%, rgba(72, 202, 228, 0.32), transparent 28%),
-    linear-gradient(135deg, #064e7a 0%, #0077b6 48%, #0f766e 100%);
+  background: linear-gradient(135deg, #0b5431 0%, #16824b 58%, #247a62 100%);
   color: #fff;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
@@ -147,16 +145,39 @@
   animation: cardEnter 0.28s ease both;
 }
 .producto-card:hover {
-  border-color: rgba(0,119,182,0.28);
+  border-color: rgba(22,130,75,0.34);
   box-shadow: var(--shadow-md); transform: translateY(-3px);
 }
 
 .producto-img {
-  height: 150px; background: linear-gradient(135deg, #eff6ff, #ecfeff);
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: 210px;
+  min-height: 150px;
+  background: #f0f9f4;
   display: flex; align-items: center; justify-content: center;
+  border-bottom: 1px solid #d8f3e4;
+  overflow: hidden;
 }
-.producto-img img { width: 100%; height: 100%; object-fit: cover; }
-.producto-icon { font-size: 3rem; }
+.producto-img img {
+  width: 100%;
+  height: 100%;
+  padding: 14px;
+  object-fit: contain;
+  background: #fff;
+}
+.producto-icon {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 2px solid #9fcdb4;
+  color: var(--color-primary-dark);
+  font-size: 2.4rem;
+  box-shadow: 0 8px 22px rgba(13, 96, 55, 0.12);
+}
 
 .producto-stock-badge {
   position: absolute;
