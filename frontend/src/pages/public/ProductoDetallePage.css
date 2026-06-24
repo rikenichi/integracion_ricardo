@@ -8,18 +8,18 @@
   align-items: center; justify-content: center;
   min-height: 240px; text-align: center;
   background:
-    radial-gradient(circle at 70% 20%, rgba(72,202,228,0.2), transparent 34%),
-    linear-gradient(135deg, #f8fafc, #eef7fb);
-  border-color: rgba(0,119,182,0.14);
+    linear-gradient(135deg, #f9fcfa, #eaf6f0);
+  border-color: rgba(21, 128, 82, 0.18);
   box-shadow: var(--shadow-md);
+  animation: cardEnter 0.32s ease both;
 }
 
 .precio-container {
   display: flex; flex-direction: column; margin-bottom: 12px;
   padding: 14px;
-  border: 1px solid rgba(0,119,182,0.14);
+  border: 1px solid rgba(21, 128, 82, 0.18);
   border-radius: var(--radius);
-  background: #f8fafc;
+  background: linear-gradient(180deg, #f7fbf8, #edf8f2);
 }
 .precio-label { font-size: 0.8rem; color: var(--color-text-muted); }
 .precio-valor { font-size: 2rem; font-weight: 700; color: var(--color-primary); }
@@ -30,6 +30,8 @@
 
 .detalle-info .card {
   animation: cardEnter 0.25s ease both;
+  border-color: rgba(21, 128, 82, 0.14);
+  box-shadow: var(--shadow);
 }
 
 .detalle-info .btn-lg {

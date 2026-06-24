@@ -6,11 +6,11 @@ import './TrackingPage.css'
 
 const ESTADOS_ORDEN = ['generado', 'en_bodega', 'en_ruta', 'entregado']
 const ETIQUETAS_ESTADO = {
-  generado: 'Generado',
-  en_bodega: 'En Bodega',
-  en_ruta: 'En Ruta',
+  generado: 'Despacho generado',
+  en_bodega: 'En preparación',
+  en_ruta: 'En ruta',
   entregado: 'Entregado',
-  fallido: 'Intento Fallido',
+  fallido: 'Intento fallido',
 }
 const ICONOS_ESTADO = {
   generado: 'GEN',

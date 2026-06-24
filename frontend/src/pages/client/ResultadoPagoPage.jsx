@@ -8,6 +8,16 @@ function formatPrecio(n) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(n)
 }
 
+function pedidoPagado(pedido) {
+  const estadoPedido = String(pedido?.estado || '').toUpperCase()
+  const estadoPago = String(
+    pedido?.pago?.estado || pedido?.pago_info?.estado_pago || ''
+  ).toUpperCase()
+
+  return ['CONFIRMADO', 'APROBADO'].includes(estadoPedido) ||
+    ['CONFIRMADO', 'APROBADO', 'AUTHORIZED'].includes(estadoPago)
+}
+
 // Solo métodos simulados — WebPay Plus tiene su propio botón de flujo real arriba
 const METODOS_SIMULADOS = [
   { value: 'tarjeta_credito', label: 'Tarjeta de Crédito', icon: '💳' },
@@ -99,6 +109,45 @@ export default function ResultadoPagoPage() {
 
   if (loading) return <div className="spinner" />
   if (error && !resultado) return <div className="page-container"><div className="alert alert-error">{error}</div></div>
+
+  if (pedidoPagado(pedido) && !resultado) {
+    return (
+      <div className="page-container">
+        <div className="resultado-card card resultado-aprobado">
+          <div className="resultado-icon">✓</div>
+          <h2>Pago aprobado</h2>
+          <p className="text-muted" style={{ marginBottom: 16 }}>
+            El pedido fue confirmado y su despacho ya está en preparación.
+          </p>
+          <div className="resultado-detalles">
+            <div className="detalle-fila">
+              <span>Pedido</span><strong>#{pedidoId}</strong>
+            </div>
+            <div className="detalle-fila">
+              <span>Estado</span>
+              <span className="badge badge-success">Pago aprobado</span>
+            </div>
+            <div className="detalle-fila">
+              <span>Despacho</span>
+              <span className="badge badge-info">Despacho generado</span>
+            </div>
+            <div className="detalle-fila">
+              <span>Documento tributario</span>
+              <span className="badge badge-warning">Pendiente</span>
+            </div>
+          </div>
+          <div className="resultado-acciones">
+            <button className="btn btn-primary" onClick={() => navigate(`/tracking/${pedidoId}`)}>
+              Ver tracking del pedido
+            </button>
+            <button className="btn btn-secondary" onClick={() => navigate('/panel')}>
+              Ir a Mi Panel
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // ── Pantalla de resultado del flujo simulado ──
   if (resultado) {

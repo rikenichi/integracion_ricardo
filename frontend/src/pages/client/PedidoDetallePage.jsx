@@ -5,9 +5,30 @@ import { obtenerPedidoDetalle } from '../../services/api'
 import { obtenerCotizacionPedido } from '../../utils/cotizacionStorage'
 import './PedidoDetallePage.css'
 
-const ESTADOS_PAGABLES = ['pendiente', 'aprobado']
-const ESTADOS_CON_TRACKING = ['aprobado', 'en_preparacion', 'despachado', 'entregado']
+const ESTADOS_PAGABLES = ['pendiente', 'pendiente_pago', 'pendiente_de_pago']
+const ESTADOS_CON_TRACKING = ['confirmado', 'aprobado', 'en_preparacion', 'despachado', 'entregado']
 const ROLES_CLIENTE = ['cliente', 'cliente_b2c', 'cliente_b2b']
+
+function normalizarEstado(valor) {
+  return String(valor || '').trim().toLowerCase()
+}
+
+function etiquetaEstadoPedido(estado, fallback) {
+  const etiquetas = {
+    pendiente: 'Pedido creado',
+    pendiente_pago: 'Pedido creado',
+    pendiente_de_pago: 'Pedido creado',
+    confirmado: 'Pago aprobado',
+    aprobado: 'Pago aprobado',
+    en_preparacion: 'En preparación',
+    despachado: 'Despachado',
+    entregado: 'Entregado',
+    rechazado: 'Pago rechazado',
+    anulado: 'Pedido anulado',
+    cancelado: 'Pedido cancelado',
+  }
+  return etiquetas[normalizarEstado(estado)] || fallback || estado
+}
 
 function formatPrecio(valor) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(Number(valor || 0))
@@ -29,6 +50,9 @@ function valor(dato) {
 function badgeEstadoPedido(estado) {
   const clases = {
     pendiente: 'badge-warning',
+    pendiente_pago: 'badge-warning',
+    pendiente_de_pago: 'badge-warning',
+    confirmado: 'badge-success',
     aprobado: 'badge-info',
     en_preparacion: 'badge-info',
     despachado: 'badge-secondary',
@@ -39,6 +63,12 @@ function badgeEstadoPedido(estado) {
 }
 
 function estadoPasoPedido(pedido, pago, despacho, dte) {
+  const estadoPedido = normalizarEstado(pedido.estado)
+  const estadoPago = normalizarEstado(pago?.estado_pago || pago?.estado)
+  const pagoAprobado = ['confirmado', 'aprobado'].includes(estadoPedido) ||
+    ['confirmado', 'aprobado', 'authorized'].includes(estadoPago)
+  const despachoGenerado = Boolean(despacho) || pagoAprobado
+
   return [
     {
       label: 'Pedido creado',
@@ -46,24 +76,32 @@ function estadoPasoPedido(pedido, pago, despacho, dte) {
       status: pedido.creado_en ? 'completado' : 'pendiente',
     },
     {
-      label: 'Pago',
-      detail: pago ? (pago.estado_display || pago.estado_pago) : 'Pago no registrado',
-      status: pago?.estado_pago === 'aprobado' ? 'completado' : pago ? 'pendiente' : 'no-disponible',
+      label: 'Pago aprobado',
+      detail: pagoAprobado
+        ? 'Pago aprobado'
+        : pago
+          ? (pago.estado_display || pago.estado_pago || pago.estado)
+          : 'Pago pendiente',
+      status: pagoAprobado ? 'completado' : 'pendiente',
     },
     {
-      label: 'Despacho',
-      detail: despacho ? (despacho.estado_display || despacho.estado_envio) : 'Despacho no registrado',
-      status: despacho ? 'completado' : 'pendiente',
+      label: 'Despacho generado',
+      detail: despacho
+        ? (despacho.estado_display || despacho.estado_envio || despacho.estado)
+        : despachoGenerado
+          ? 'En preparación'
+          : 'Pendiente de pago',
+      status: despachoGenerado ? 'completado' : 'pendiente',
     },
     {
-      label: 'DTE',
-      detail: dte ? `${dte.tipo_documento_nombre} folio ${dte.folio}` : 'Documento tributario no generado',
+      label: 'Documento tributario',
+      detail: dte ? `${dte.tipo_documento_nombre} folio ${dte.folio}` : 'Documento tributario pendiente',
       status: dte ? 'completado' : 'pendiente',
     },
     {
       label: 'Entrega / Tracking',
       detail: despacho?.numero_seguimiento || pedido.estado_display || pedido.estado,
-      status: pedido.estado === 'entregado' ? 'completado' : ESTADOS_CON_TRACKING.includes(pedido.estado) ? 'pendiente' : 'no-disponible',
+      status: estadoPedido === 'entregado' ? 'completado' : ESTADOS_CON_TRACKING.includes(estadoPedido) ? 'pendiente' : 'no-disponible',
     },
   ]
 }
@@ -98,19 +136,23 @@ export default function PedidoDetallePage() {
   }, [id])
 
   const detalles = Array.isArray(pedido?.detalles) ? pedido.detalles : []
-  const pago = pedido?.pago_info
+  const pago = pedido?.pago_info || pedido?.pago
   const despacho = pedido?.despacho_info
   const dte = pedido?.dte_info
   const esCliente = ROLES_CLIENTE.includes(usuario?.rol)
+  const estadoPedido = normalizarEstado(pedido?.estado)
+  const estadoPago = normalizarEstado(pago?.estado_pago || pago?.estado)
+  const pagoAprobado = ['confirmado', 'aprobado'].includes(estadoPedido) ||
+    ['confirmado', 'aprobado', 'authorized'].includes(estadoPago)
 
   // Cotización Chilexpress guardada por el frontend al crear el pedido
   // (el backend aún no persiste costo_envio en el modelo Pedido).
   const cotizacionGuardada = useMemo(() => obtenerCotizacionPedido(id), [id])
   const costoEnvio = Number(pedido?.costo_envio || cotizacionGuardada?.costo || 0)
   const totalConEnvio = Number(pedido?.total || 0) + costoEnvio
-  const puedePagar = ESTADOS_PAGABLES.includes(pedido?.estado) &&
+  const puedePagar = ESTADOS_PAGABLES.includes(estadoPedido) &&
     esCliente
-  const puedeVerTracking = Boolean(despacho?.id) || ESTADOS_CON_TRACKING.includes(pedido?.estado)
+  const puedeVerTracking = Boolean(despacho?.id) || ESTADOS_CON_TRACKING.includes(estadoPedido)
   const timeline = useMemo(() => pedido ? estadoPasoPedido(pedido, pago, despacho, dte) : [], [pedido, pago, despacho, dte])
 
   if (loading) {
@@ -170,7 +212,9 @@ export default function PedidoDetallePage() {
         <div>
           <h1>Pedido #{pedido.id}</h1>
           <div className="pedido-header-badges">
-            <span className={`badge ${badgeEstadoPedido(pedido.estado)}`}>{pedido.estado_display || pedido.estado}</span>
+            <span className={`badge ${badgeEstadoPedido(estadoPedido)}`}>
+              {etiquetaEstadoPedido(estadoPedido, pedido.estado_display)}
+            </span>
             <span className="badge badge-secondary">{String(pedido.tipo_cliente || '').toUpperCase()}</span>
             <span className="text-muted">{formatFecha(pedido.creado_en)}</span>
           </div>
@@ -273,15 +317,15 @@ export default function PedidoDetallePage() {
           <h2>Pago</h2>
           {pago ? (
             <>
-              <span className={`badge ${pago.estado_pago === 'aprobado' ? 'badge-success' : 'badge-warning'}`}>
-                {pago.estado_display || pago.estado_pago}
+              <span className={`badge ${pagoAprobado ? 'badge-success' : 'badge-warning'}`}>
+                {pagoAprobado ? 'Pago aprobado' : (pago.estado_display || pago.estado_pago || pago.estado)}
               </span>
-              <p><strong>Método:</strong> {valor(pago.metodo_display || pago.metodo_pago)}</p>
-              <p><strong>Monto:</strong> {formatPrecio(pago.monto)}</p>
-              <p><strong>Fecha:</strong> {formatFecha(pago.fecha)}</p>
+              <p><strong>Método:</strong> {valor(pago.metodo_display || pago.metodo_pago || pago.modo)}</p>
+              <p><strong>Monto:</strong> {formatPrecio(pago.monto || pago.respuesta?.amount || pedido.total)}</p>
+              <p><strong>Fecha:</strong> {formatFecha(pago.fecha || pedido.actualizado_en)}</p>
             </>
           ) : (
-            <p className="text-muted">Pago no registrado.</p>
+            <p className="text-muted">{pagoAprobado ? 'Pago aprobado.' : 'Pago pendiente.'}</p>
           )}
           {puedePagar && (
             <button className="btn btn-primary btn-sm" onClick={() => navigate(`/resultado-pago/${pedido.id}`)}>
@@ -300,7 +344,9 @@ export default function PedidoDetallePage() {
               <p><strong>Entrega estimada:</strong> {formatFecha(despacho.fecha_estimada)}</p>
             </>
           ) : (
-            <p className="text-muted">Despacho no registrado.</p>
+            <p className="text-muted">
+              {pagoAprobado ? 'Despacho generado. El pedido está en preparación.' : 'Despacho pendiente de pago.'}
+            </p>
           )}
           {puedeVerTracking && (
             <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/tracking/${pedido.id}`)}>
@@ -322,7 +368,7 @@ export default function PedidoDetallePage() {
               </button>
             </>
           ) : (
-            <p className="text-muted">Documento tributario no generado.</p>
+            <p className="text-muted">Documento tributario pendiente.</p>
           )}
         </section>
       </div>
