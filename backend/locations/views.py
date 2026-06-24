@@ -1,4 +1,6 @@
 import json
+import re
+import unicodedata
 from pathlib import Path
 
 from django.utils import timezone
@@ -36,6 +38,49 @@ LEGACY_COMUNA_IDS = {
     "CONC": 301,
     "THNO": 302,
 }
+
+REGION_CODES_NORTH_TO_SOUTH = [
+    "R15",
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "RM",
+    "R6",
+    "R7",
+    "R16",
+    "R8",
+    "R9",
+    "R14",
+    "R10",
+    "R11",
+    "R12",
+]
+
+REGION_ORDER_BY_CODE = {
+    code: index
+    for index, code in enumerate(REGION_CODES_NORTH_TO_SOUTH)
+}
+
+REGION_NAMES_NORTH_TO_SOUTH = [
+    "ARICA Y PARINACOTA",
+    "TARAPACA",
+    "ANTOFAGASTA",
+    "ATACAMA",
+    "COQUIMBO",
+    "VALPARAISO",
+    "METROPOLITANA DE SANTIAGO",
+    "LIBERTADOR GRAL BERNARDO O HIGGINS",
+    "MAULE",
+    "NUBLE",
+    "BIOBIO",
+    "LA ARAUCANIA",
+    "LOS RIOS",
+    "LOS LAGOS",
+    "AISEN DEL GRAL CARLOS IBANEZ DEL CAMPO",
+    "MAGALLANES Y LA ANTARTICA CHILENA",
+]
 
 FALLBACK_COVERAGE = {
     "source": "Medistock controlled fallback",
@@ -110,6 +155,42 @@ def cargar_cobertura():
         return FALLBACK_COVERAGE, "El JSON de cobertura no contiene regiones."
 
     return data, None
+
+
+def normalizar_texto_orden(value):
+    text = unicodedata.normalize("NFD", str(value or "").upper())
+    text = "".join(
+        character
+        for character in text
+        if unicodedata.category(character) != "Mn"
+    )
+    return re.sub(r"[^A-Z0-9]+", " ", text).strip()
+
+
+REGION_ORDER_BY_NAME = {
+    normalizar_texto_orden(name): index
+    for index, name in enumerate(REGION_NAMES_NORTH_TO_SOUTH)
+}
+REGION_ORDER_BY_NAME.update(
+    {
+        "REGION METROPOLITANA": REGION_ORDER_BY_CODE["RM"],
+        "METROPOLITANA": REGION_ORDER_BY_CODE["RM"],
+        "ARAUCANIA": REGION_ORDER_BY_CODE["R9"],
+        "AISEN DEL GRAL C IBANEZ DEL CAMPO": REGION_ORDER_BY_CODE["R11"],
+        "MAGALLANES Y ANTARTICA CHILENA": REGION_ORDER_BY_CODE["R12"],
+    }
+)
+
+
+def region_sort_key(region):
+    region_code = normalizar_texto_orden(region.get("region_code"))
+    region_name = normalizar_texto_orden(region.get("region_name"))
+    order = REGION_ORDER_BY_CODE.get(region_code)
+
+    if order is None:
+        order = REGION_ORDER_BY_NAME.get(region_name, len(REGION_ORDER_BY_CODE))
+
+    return order, region_name
 
 
 def region_id_publico(region):
@@ -189,9 +270,10 @@ class RegionListView(APIView):
 
     def get(self, request):
         coverage, warning = cargar_cobertura()
+        regions = sorted(coverage["regions"], key=region_sort_key)
         response = Response([
             representar_region(region)
-            for region in coverage["regions"]
+            for region in regions
         ])
         return agregar_metadata_cobertura(response, coverage, warning)
 
@@ -218,7 +300,11 @@ class ComunaListView(APIView):
                 if include_disabled or comuna.get("enabled"):
                     comunas.append(representar_comuna(region, comuna))
 
-        comunas.sort(key=lambda comuna: comuna["nombre"])
+        comunas.sort(
+            key=lambda comuna: normalizar_texto_orden(
+                comuna.get("comuna_name") or comuna.get("nombre")
+            )
+        )
         response = Response(comunas)
         return agregar_metadata_cobertura(response, coverage, warning)
 
