@@ -6,13 +6,14 @@
   min-height: 230px;
   border: 1px solid rgba(22, 130, 75, 0.2);
   border-radius: var(--radius);
-  background: linear-gradient(135deg, #0b5431 0%, #16824b 58%, #247a62 100%);
+  background: linear-gradient(135deg, #084d32 0%, #158052 60%, #087f8c 100%);
   color: #fff;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
   gap: 22px;
   align-items: center;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 18px 38px rgba(9, 92, 58, 0.18);
+  animation: cardEnter 0.36s ease both;
 }
 
 .catalogo-hero::after {
@@ -133,9 +134,12 @@
   flex: 1; min-width: 200px; padding: 9px 12px;
   border: 1px solid var(--color-border); border-radius: var(--radius);
   font-size: 0.9rem;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .filtros input:focus, .filtros select:focus {
   outline: none; border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(21, 128, 82, 0.15);
 }
 
 .producto-card {
@@ -146,7 +150,7 @@
 }
 .producto-card:hover {
   border-color: rgba(22,130,75,0.34);
-  box-shadow: var(--shadow-md); transform: translateY(-3px);
+  box-shadow: 0 16px 32px rgba(9, 92, 58, 0.14); transform: translateY(-4px);
 }
 
 .producto-img {
@@ -154,7 +158,7 @@
   aspect-ratio: 1 / 1;
   max-height: 210px;
   min-height: 150px;
-  background: #f0f9f4;
+  background: linear-gradient(145deg, #edf8f2, #e8f5f4);
   display: flex; align-items: center; justify-content: center;
   border-bottom: 1px solid #d8f3e4;
   overflow: hidden;
@@ -177,6 +181,16 @@
   color: var(--color-primary-dark);
   font-size: 2.4rem;
   box-shadow: 0 8px 22px rgba(13, 96, 55, 0.12);
+}
+
+.producto-card:hover .producto-icon {
+  border-color: var(--color-primary);
+  box-shadow: 0 10px 26px rgba(9, 92, 58, 0.18);
+  transform: scale(1.03);
+}
+
+.producto-icon {
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .producto-stock-badge {
