@@ -9,6 +9,9 @@ from accounts.views import (
     PedidoCreateView,
     PedidoDetailView,
     PerfilView,
+    WebpayCommitView,
+    WebpayEstadoView,
+    WebpayIniciarView,
 )
 from inventory.views import CatalogoProductoView, CategoriaProductoView, ProductoDetalleView
 from locations.views import (
@@ -34,4 +37,7 @@ urlpatterns = [
     path('api/logistics/cotizar/', CotizarDespachoView.as_view(), name='logistics-cotizar'),
     path('api/orders/pedidos/', PedidoCreateView.as_view(), name='orders-pedidos-create'),
     path('api/orders/pedidos/<int:pedido_id>/', PedidoDetailView.as_view(), name='orders-pedidos-detail'),
+    path('api/payments/webpay/iniciar/', WebpayIniciarView.as_view(), name='webpay-iniciar'),
+    path('api/payments/webpay/commit/', WebpayCommitView.as_view(), name='webpay-commit'),
+    path('api/payments/webpay/estado/<str:token_ws>/', WebpayEstadoView.as_view(), name='webpay-estado'),
 ]

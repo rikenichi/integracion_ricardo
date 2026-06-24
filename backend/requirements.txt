@@ -6,3 +6,4 @@ djangorestframework-simplejwt==5.3.1
 gunicorn
 django-cors-headers
 whitenoise
+transbank-sdk==6.1.0
