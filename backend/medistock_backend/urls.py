@@ -19,6 +19,7 @@ from locations.views import (
     CotizarDespachoView,
     RegionListView,
     SucursalDetailView,
+    TrackingPedidoView,
 )
 
 urlpatterns = [
@@ -35,6 +36,7 @@ urlpatterns = [
     path('api/locations/comunas/', ComunaListView.as_view(), name='locations-comunas'),
     path('api/locations/sucursales/<int:sucursal_id>/', SucursalDetailView.as_view(), name='locations-sucursal'),
     path('api/logistics/cotizar/', CotizarDespachoView.as_view(), name='logistics-cotizar'),
+    path('api/logistics/envios/<int:pedido_id>/tracking/', TrackingPedidoView.as_view(), name='logistics-tracking'),
     path('api/orders/pedidos/', PedidoCreateView.as_view(), name='orders-pedidos-create'),
     path('api/orders/pedidos/<int:pedido_id>/', PedidoDetailView.as_view(), name='orders-pedidos-detail'),
     path('api/payments/webpay/iniciar/', WebpayIniciarView.as_view(), name='webpay-iniciar'),

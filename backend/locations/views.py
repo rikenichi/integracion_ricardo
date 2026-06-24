@@ -1,7 +1,10 @@
+from django.utils import timezone
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from accounts.models import Pedido
 
 
 REGIONES = [
@@ -95,6 +98,50 @@ class CotizarDespachoView(APIView):
                         "serviceDescription": "Despacho estándar simulado",
                         "serviceValue": 3990,
                         "deliveryType": 1,
+                    }
+                ],
+            }
+        )
+
+
+class TrackingPedidoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pedido_id):
+        pedidos = Pedido.objects.all()
+        if not request.user.is_superuser:
+            pedidos = pedidos.filter(usuario=request.user)
+
+        try:
+            pedido = pedidos.get(id=pedido_id)
+        except Pedido.DoesNotExist:
+            return Response(
+                {"detail": "Pedido no encontrado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        timestamp = pedido.actualizado_en or timezone.now()
+        return Response(
+            {
+                "pedido_id": pedido.id,
+                "pedido": pedido.id,
+                "numero_tracking": f"MED-{pedido.id:06d}",
+                "courier": "Medistock despacho controlado",
+                "estado": "generado",
+                "estado_label": "Generado",
+                "fecha_estimada_entrega": None,
+                "direccion_destino": (
+                    f"Dirección registrada #{pedido.datos.get('direccion_entrega_id')}"
+                    if pedido.datos.get("direccion_entrega_id")
+                    else "Dirección registrada en el pedido"
+                ),
+                "eventos": [
+                    {
+                        "id": f"pedido-{pedido.id}-generado",
+                        "estado": "generado",
+                        "descripcion": "Pedido recibido y despacho generado.",
+                        "ubicacion": "Centro de distribución Medistock",
+                        "timestamp": timestamp.isoformat(),
                     }
                 ],
             }
