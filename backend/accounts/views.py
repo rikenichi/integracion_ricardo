@@ -114,11 +114,21 @@ class PedidoCreateView(APIView):
 
     @staticmethod
     def representar(pedido):
+        etiquetas_estado = {
+            'PENDIENTE_PAGO': 'Pendiente de pago',
+            'CONFIRMADO': 'Pagado / Confirmado',
+            'RECHAZADO': 'Pago rechazado',
+            'ANULADO': 'Pago anulado',
+        }
+
         return {
             'id': pedido.id,
             'usuario_id': pedido.usuario_id,
             'estado': pedido.estado,
-            'estado_display': 'Pendiente de pago',
+            'estado_display': etiquetas_estado.get(
+                pedido.estado,
+                pedido.estado.replace('_', ' ').title(),
+            ),
             'subtotal': pedido.subtotal,
             'descuento': 0,
             'total': pedido.total,
