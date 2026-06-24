@@ -12,6 +12,7 @@ class Producto(models.Model):
     categoria_nombre = models.CharField(max_length=80, blank=True)
     marca_nombre = models.CharField(max_length=80, blank=True)
     imagen_url = models.URLField(blank=True)
+    requiere_receta = models.BooleanField(default=False)
     activo = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):

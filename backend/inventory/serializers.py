@@ -25,6 +25,7 @@ class ProductoSerializer(serializers.ModelSerializer):
             'categoria_nombre',
             'marca_nombre',
             'imagen_url',
+            'requiere_receta',
             'activo',
         ]
 

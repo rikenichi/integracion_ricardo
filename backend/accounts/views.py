@@ -145,6 +145,10 @@ class PedidoCreateView(APIView):
             'prioridad_medica': pedido.datos.get('prioridad_medica'),
             'fecha_requerida_entrega': pedido.datos.get('fecha_requerida_entrega'),
             'observacion': pedido.datos.get('observacion', ''),
+            'receta_requerida': pedido.datos.get('receta_requerida', False),
+            'receta_confirmada': pedido.datos.get('receta_confirmada', False),
+            'receta_observacion': pedido.datos.get('receta_observacion', ''),
+            'productos_con_receta': pedido.datos.get('productos_con_receta', []),
             'creado_en': pedido.creado_en,
             'actualizado_en': pedido.actualizado_en,
         }
@@ -159,6 +163,7 @@ class PedidoCreateView(APIView):
             )
 
         detalles_respuesta = []
+        productos_con_receta = []
         total = 0
 
         for detalle in detalles:
@@ -196,6 +201,30 @@ class PedidoCreateView(APIView):
                     'subtotal': subtotal,
                 }
             )
+            if producto.requiere_receta:
+                productos_con_receta.append(
+                    {
+                        'producto_id': producto.id,
+                        'codigo': producto.codigo,
+                        'nombre': producto.nombre,
+                    }
+                )
+
+        receta_confirmada = request.data.get('receta_confirmada') is True
+        receta_observacion = str(
+            request.data.get('receta_observacion', '')
+        ).strip()
+
+        if productos_con_receta and not receta_confirmada:
+            return Response(
+                {
+                    'detail': (
+                        'Debes confirmar que cuentas con receta médica '
+                        'para los productos que la requieren.'
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         pedido = Pedido.objects.create(
             usuario=request.user,
@@ -215,6 +244,10 @@ class PedidoCreateView(APIView):
                 'prioridad_medica': request.data.get('prioridad_medica', 'NORMAL'),
                 'fecha_requerida_entrega': request.data.get('fecha_requerida_entrega'),
                 'observacion': request.data.get('observacion', ''),
+                'receta_requerida': bool(productos_con_receta),
+                'receta_confirmada': receta_confirmada,
+                'receta_observacion': receta_observacion,
+                'productos_con_receta': productos_con_receta,
             },
         )
 

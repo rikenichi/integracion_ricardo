@@ -422,6 +422,8 @@ export default function ConfirmacionPedidoPage() {
 
   const [direccion, setDireccion] = useState('')
   const [notas, setNotas] = useState('')
+  const [recetaConfirmada, setRecetaConfirmada] = useState(false)
+  const [recetaObservacion, setRecetaObservacion] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -464,6 +466,12 @@ export default function ConfirmacionPedidoPage() {
       () => construirProductosCotizacion(items),
       [items]
   )
+
+  const productosConReceta = useMemo(
+      () => items.filter(({ producto }) => Boolean(producto?.requiere_receta)),
+      [items]
+  )
+  const requiereReceta = productosConReceta.length > 0
 
   const stockParaCotizar = useMemo(
       () => obtenerSucursalesConStockSuficiente(items),
@@ -512,6 +520,7 @@ export default function ConfirmacionPedidoPage() {
       && regionCodigo
       && comunaCodigo
       && cotizacionValida
+      && (!requiereReceta || recetaConfirmada)
   )
 
   const obtenerMotivoBloqueoPedido = () => {
@@ -519,6 +528,7 @@ export default function ConfirmacionPedidoPage() {
     if (!items.length) return 'El carrito esta vacio.'
     if (!direccion.trim()) return 'La direccion de entrega es obligatoria.'
     if (!regionCodigo || !comunaCodigo) return 'Debes seleccionar region y comuna para continuar.'
+    if (requiereReceta && !recetaConfirmada) return 'Debes confirmar que cuentas con receta medica.'
     if (!cotizacion) return 'Debes cotizar el despacho antes de crear el pedido.'
     if (!cotizacion?.sucursal_origen?.id) return 'Debes tener una sucursal de origen seleccionada desde la cotizacion.'
     if (!servicioSeleccionado) return 'Debes seleccionar un servicio de despacho.'
@@ -956,6 +966,8 @@ export default function ConfirmacionPedidoPage() {
         tipo_despacho: 'NORMAL',
         prioridad_medica: 'NORMAL',
         fecha_requerida_entrega: obtenerFechaRequeridaEntrega(),
+        receta_confirmada: recetaConfirmada,
+        receta_observacion: recetaObservacion.trim(),
 
         observacion: [
           notas,
@@ -1121,6 +1133,45 @@ export default function ConfirmacionPedidoPage() {
                 />
               </div>
             </div>
+
+            {requiereReceta && (
+                <div className="card mt-2">
+                  <h3 className="section-title">Receta médica requerida</h3>
+                  <div className="alert alert-info">
+                    Este pedido contiene productos que requieren receta:
+                    {' '}
+                    {productosConReceta.map(({ producto }) => producto.nombre).join(', ')}.
+                  </div>
+
+                  <label
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 10,
+                        marginBottom: 16,
+                        fontWeight: 600,
+                      }}
+                  >
+                    <input
+                        type="checkbox"
+                        checked={recetaConfirmada}
+                        onChange={e => setRecetaConfirmada(e.target.checked)}
+                        style={{ marginTop: 5 }}
+                    />
+                    <span>Declaro que cuento con receta médica vigente.</span>
+                  </label>
+
+                  <div className="form-group">
+                    <label>Folio/observación de receta (opcional)</label>
+                    <input
+                        type="text"
+                        value={recetaObservacion}
+                        onChange={e => setRecetaObservacion(e.target.value)}
+                        placeholder="Ej: Folio 12345 o indicación médica"
+                    />
+                  </div>
+                </div>
+            )}
 
             <div className="card mt-2">
               <h3 className="section-title">
@@ -1420,7 +1471,11 @@ export default function ConfirmacionPedidoPage() {
             <button
                 className="btn btn-primary btn-block btn-lg mt-2"
                 onClick={handleConfirmar}
-                disabled={loading || items.length === 0}
+                disabled={
+                  loading
+                  || items.length === 0
+                  || (requiereReceta && !recetaConfirmada)
+                }
             >
               {loading ? 'Creando pedido...' : 'Crear pedido y pagar ->'}
             </button>
