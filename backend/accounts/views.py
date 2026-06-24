@@ -7,6 +7,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from transbank.common.integration_api_keys import IntegrationApiKeys
+from transbank.common.integration_commerce_codes import IntegrationCommerceCodes
 from transbank.common.integration_type import IntegrationType
 from transbank.common.options import WebpayOptions
 from transbank.webpay.webpay_plus.transaction import Transaction
@@ -17,18 +19,14 @@ from .models import Pedido
 
 def webpay_transaction():
     environment = os.getenv('WEBPAY_ENV', '').upper()
-    commerce_code = os.getenv('WEBPAY_COMMERCE_CODE', '')
-    api_key = os.getenv('WEBPAY_API_KEY', '')
 
     if environment != 'TEST':
         raise ValueError('WEBPAY_ENV debe ser TEST.')
-    if not commerce_code or not api_key:
-        raise ValueError('Faltan credenciales Webpay TEST.')
 
     return Transaction(
         WebpayOptions(
-            commerce_code,
-            api_key,
+            IntegrationCommerceCodes.WEBPAY_PLUS,
+            IntegrationApiKeys.WEBPAY,
             IntegrationType.TEST,
         )
     )
