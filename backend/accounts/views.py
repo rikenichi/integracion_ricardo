@@ -230,6 +230,66 @@ class PedidoDetailView(APIView):
         return Response(PedidoCreateView.representar(pedido))
 
 
+class MisPedidosView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        pedidos = Pedido.objects.select_related('usuario').order_by('-creado_en')
+        if not request.user.is_superuser:
+            pedidos = pedidos.filter(usuario=request.user)
+
+        return Response([
+            PedidoCreateView.representar(pedido)
+            for pedido in pedidos
+        ])
+
+
+class MisPagosView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        pedidos = Pedido.objects.exclude(pago={}).order_by('-actualizado_en')
+        if not request.user.is_superuser:
+            pedidos = pedidos.filter(usuario=request.user)
+
+        pagos = []
+        for pedido in pedidos:
+            pago = pedido.pago or {}
+            respuesta = pago.get('respuesta') or {}
+            estado = pago.get('estado', 'NO_INICIADO')
+            if estado == 'NO_INICIADO':
+                continue
+
+            metodo = (
+                'Webpay Plus'
+                if pago.get('modo') == 'WEBPAY_PLUS_TEST'
+                else pago.get('modo', 'No iniciado')
+            )
+
+            pagos.append({
+                'id': pedido.id,
+                'pedido': pedido.id,
+                'pedido_id': pedido.id,
+                'metodo': pago.get('modo', ''),
+                'metodo_display': metodo,
+                'estado': estado,
+                'estado_display': estado.replace('_', ' ').title(),
+                'monto': respuesta.get('amount', pedido.total),
+                'monto_confirmado': respuesta.get('amount'),
+                'codigo_autorizacion': respuesta.get('authorization_code', ''),
+                'response_code': respuesta.get('response_code'),
+                'fecha_creacion': pedido.creado_en,
+                'fecha_confirmacion': (
+                    pedido.actualizado_en
+                    if estado == 'CONFIRMADO'
+                    else None
+                ),
+                'procesado_en': pedido.actualizado_en,
+            })
+
+        return Response(pagos)
+
+
 class WebpayIniciarView(APIView):
     permission_classes = [IsAuthenticated]
 

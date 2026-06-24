@@ -6,6 +6,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from accounts.views import (
     DireccionEntregaView,
     LogoutView,
+    MisPagosView,
+    MisPedidosView,
     PedidoCreateView,
     PedidoDetailView,
     PerfilView,
@@ -38,7 +40,9 @@ urlpatterns = [
     path('api/logistics/cotizar/', CotizarDespachoView.as_view(), name='logistics-cotizar'),
     path('api/logistics/envios/<int:pedido_id>/tracking/', TrackingPedidoView.as_view(), name='logistics-tracking'),
     path('api/orders/pedidos/', PedidoCreateView.as_view(), name='orders-pedidos-create'),
+    path('api/orders/pedidos/mis-pedidos/', MisPedidosView.as_view(), name='orders-mis-pedidos'),
     path('api/orders/pedidos/<int:pedido_id>/', PedidoDetailView.as_view(), name='orders-pedidos-detail'),
+    path('api/payments/mis-pagos/', MisPagosView.as_view(), name='payments-mis-pagos'),
     path('api/payments/webpay/iniciar/', WebpayIniciarView.as_view(), name='webpay-iniciar'),
     path('api/payments/webpay/commit/', WebpayCommitView.as_view(), name='webpay-commit'),
     path('api/payments/webpay/estado/<str:token_ws>/', WebpayEstadoView.as_view(), name='webpay-estado'),
