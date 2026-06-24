@@ -14,7 +14,7 @@ from transbank.common.options import WebpayOptions
 from transbank.webpay.webpay_plus.transaction import Transaction
 
 from inventory.models import Producto
-from .models import Pedido
+from .models import EnvioPedido, Pedido
 
 
 def webpay_transaction():
@@ -353,6 +353,28 @@ class WebpayCommitView(APIView):
             'respuesta': response,
         }
         pedido.save(update_fields=['estado', 'pago', 'actualizado_en'])
+
+        if autorizado:
+            EnvioPedido.objects.get_or_create(
+                pedido=pedido,
+                defaults={
+                    'numero_tracking': f'MED-{pedido.id:06d}',
+                    'direccion_destino': (
+                        f"Dirección registrada #{pedido.datos.get('direccion_entrega_id')}"
+                        if pedido.datos.get('direccion_entrega_id')
+                        else 'Dirección registrada en el pedido'
+                    ),
+                    'eventos': [
+                        {
+                            'id': f'pedido-{pedido.id}-generado',
+                            'estado': 'generado',
+                            'descripcion': 'Pago aprobado y despacho generado.',
+                            'ubicacion': 'Centro de distribución Medistock',
+                            'timestamp': pedido.actualizado_en.isoformat(),
+                        }
+                    ],
+                },
+            )
 
         return redirigir_resultado_webpay(
             estado=pedido.estado,

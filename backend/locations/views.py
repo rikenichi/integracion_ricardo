@@ -4,7 +4,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.models import Pedido
+from accounts.models import EnvioPedido, Pedido
 
 
 REGIONES = [
@@ -120,16 +120,17 @@ class TrackingPedidoView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        if pedido.estado != "CONFIRMADO":
+            return Response(
+                {"detail": "El envío se genera cuando el pago está confirmado."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         timestamp = pedido.actualizado_en or timezone.now()
-        return Response(
-            {
-                "pedido_id": pedido.id,
-                "pedido": pedido.id,
+        envio, _ = EnvioPedido.objects.get_or_create(
+            pedido=pedido,
+            defaults={
                 "numero_tracking": f"MED-{pedido.id:06d}",
-                "courier": "Medistock despacho controlado",
-                "estado": "generado",
-                "estado_label": "Generado",
-                "fecha_estimada_entrega": None,
                 "direccion_destino": (
                     f"Dirección registrada #{pedido.datos.get('direccion_entrega_id')}"
                     if pedido.datos.get("direccion_entrega_id")
@@ -144,5 +145,19 @@ class TrackingPedidoView(APIView):
                         "timestamp": timestamp.isoformat(),
                     }
                 ],
+            },
+        )
+
+        return Response(
+            {
+                "pedido_id": pedido.id,
+                "pedido": pedido.id,
+                "numero_tracking": envio.numero_tracking,
+                "courier": envio.courier,
+                "estado": envio.estado,
+                "estado_label": envio.estado_label,
+                "fecha_estimada_entrega": envio.fecha_estimada_entrega,
+                "direccion_destino": envio.direccion_destino,
+                "eventos": envio.eventos,
             }
         )

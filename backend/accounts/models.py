@@ -20,3 +20,23 @@ class Pedido(models.Model):
 
     def __str__(self):
         return f'Pedido #{self.id} - {self.usuario.username}'
+
+
+class EnvioPedido(models.Model):
+    pedido = models.OneToOneField(
+        Pedido,
+        on_delete=models.CASCADE,
+        related_name='envio',
+    )
+    numero_tracking = models.CharField(max_length=40, unique=True)
+    courier = models.CharField(max_length=80, default='Medistock despacho controlado')
+    estado = models.CharField(max_length=30, default='generado')
+    estado_label = models.CharField(max_length=60, default='Generado')
+    direccion_destino = models.CharField(max_length=255, blank=True)
+    eventos = models.JSONField(default=list)
+    fecha_estimada_entrega = models.DateField(null=True, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.numero_tracking} - Pedido #{self.pedido_id}'
