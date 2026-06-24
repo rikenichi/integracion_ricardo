@@ -7,3 +7,4 @@ gunicorn
 django-cors-headers
 whitenoise
 transbank-sdk==6.1.0
+requests==2.32.3

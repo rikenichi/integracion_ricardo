@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import unicodedata
 from pathlib import Path
@@ -10,6 +11,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import EnvioPedido, Pedido
+from logistics.services.chilexpress_service import (
+    ChilexpressService,
+    ChilexpressServiceError,
+)
+from logistics.services.mock_shipping_service import MockShippingService
 
 
 COVERAGE_PATH = (
@@ -369,8 +375,8 @@ class CotizarDespachoView(APIView):
             return Response(
                 {
                     "detail": (
-                        "La comuna de destino no está habilitada para "
-                        "despacho a domicilio."
+                        "Chilexpress no tiene cobertura de entrega para "
+                        "la comuna seleccionada."
                     ),
                     "county_code": county_code_destino,
                     "operational_status": comuna.get(
@@ -381,28 +387,22 @@ class CotizarDespachoView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        payload = {
-            "courier": "Chilexpress",
-            "coverage_source": coverage.get("source"),
-            "coverage_generated_at": coverage.get("generated_at"),
-            "origin_county_code": "STGO",
-            "destination_county_code": str(
-                county_code_destino
-            ).strip().upper(),
-            "num_cajas": 1,
-            "servicios_disponibles": [
-                {
-                    "serviceTypeCode": "MEDISTOCK-DEMO",
-                    "serviceDescription": (
-                        "Despacho estándar con cobertura Chilexpress"
-                    ),
-                    "serviceValue": 3990,
-                    "deliveryType": 1,
-                }
-            ],
-        }
-        if warning:
-            payload["coverage_warning"] = warning
+        mode = os.getenv("CHILEXPRESS_MODE", "mock").strip().lower()
+        subscription_key = os.getenv(
+            "CHILEXPRESS_SUBSCRIPTION_KEY",
+            "",
+        ).strip()
+
+        if mode != "real" or not subscription_key:
+            payload = MockShippingService.quote(mode="mock")
+        else:
+            try:
+                payload = ChilexpressService().quote(
+                    str(county_code_destino).strip().upper(),
+                    productos,
+                )
+            except ChilexpressServiceError:
+                payload = MockShippingService.quote(mode="fallback")
 
         response = Response(payload)
         return agregar_metadata_cobertura(response, coverage, warning)

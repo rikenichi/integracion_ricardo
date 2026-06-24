@@ -1,0 +1,221 @@
+import os
+
+import requests
+
+from .mock_shipping_service import MockShippingService
+
+
+class ChilexpressServiceError(RuntimeError):
+    pass
+
+
+class ChilexpressService:
+    RATING_URL = (
+        "https://testservices.wschilexpress.com/"
+        "rating/api/v1.0/rates/courier"
+    )
+    TIMEOUT_SECONDS = 15
+
+    def __init__(self):
+        self.subscription_key = os.getenv(
+            "CHILEXPRESS_SUBSCRIPTION_KEY",
+            "",
+        ).strip()
+        self.origin_region = os.getenv(
+            "CHILEXPRESS_ORIGIN_REGION",
+            "RM",
+        ).strip()
+        self.origin_comuna = os.getenv(
+            "CHILEXPRESS_ORIGIN_COMUNA",
+            "STGO",
+        ).strip()
+        self.default_weight_kg = self._positive_float(
+            "CHILEXPRESS_DEFAULT_WEIGHT_KG",
+            1.0,
+        )
+        self.default_length_cm = self._positive_float(
+            "CHILEXPRESS_DEFAULT_LENGTH_CM",
+            10.0,
+        )
+        self.default_width_cm = self._positive_float(
+            "CHILEXPRESS_DEFAULT_WIDTH_CM",
+            10.0,
+        )
+        self.default_height_cm = self._positive_float(
+            "CHILEXPRESS_DEFAULT_HEIGHT_CM",
+            10.0,
+        )
+
+    @staticmethod
+    def _positive_float(variable_name, default):
+        try:
+            value = float(os.getenv(variable_name, default))
+        except (TypeError, ValueError):
+            return default
+        return value if value > 0 else default
+
+    @staticmethod
+    def _positive_number(value, default):
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return default
+        return number if number > 0 else default
+
+    def _package_from_products(self, products):
+        total_weight_kg = 0
+        declared_worth = 0
+        lengths = []
+        widths = []
+        heights = []
+
+        for product in products:
+            quantity = self._positive_number(product.get("cantidad"), 1)
+            weight_mg = self._positive_number(product.get("peso_mg"), 0)
+            length_mm = self._positive_number(product.get("largo_mm"), 0)
+            width_mm = self._positive_number(product.get("ancho_mm"), 0)
+            height_mm = self._positive_number(product.get("alto_mm"), 0)
+            unit_value = self._positive_number(
+                product.get("valor_unitario"),
+                0,
+            )
+
+            total_weight_kg += (weight_mg / 1_000_000) * quantity
+            declared_worth += unit_value * quantity
+            if length_mm:
+                lengths.append(length_mm / 10)
+            if width_mm:
+                widths.append(width_mm / 10)
+            if height_mm:
+                heights.append(height_mm / 10)
+
+        return {
+            "weight": total_weight_kg or self.default_weight_kg,
+            "height": max(heights, default=self.default_height_cm),
+            "width": max(widths, default=self.default_width_cm),
+            "length": max(lengths, default=self.default_length_cm),
+            "declared_worth": max(int(round(declared_worth)), 1000),
+        }
+
+    def _build_payload(self, destination_county_code, products):
+        package = self._package_from_products(products)
+        return {
+            "originCountyCode": self.origin_comuna,
+            "destinationCountyCode": destination_county_code,
+            "package": {
+                "weight": package["weight"],
+                "height": package["height"],
+                "width": package["width"],
+                "length": package["length"],
+            },
+            "productType": 3,
+            "contentType": 1,
+            "declaredWorth": package["declared_worth"],
+            "deliveryTime": 0,
+        }
+
+    @staticmethod
+    def _extract_options(data):
+        if not isinstance(data, dict):
+            return []
+
+        for key in (
+            "courierServiceOptions",
+            "serviceOptions",
+            "services",
+            "rates",
+        ):
+            options = data.get(key)
+            if isinstance(options, list):
+                return options
+
+        for key in ("data", "result"):
+            options = ChilexpressService._extract_options(data.get(key))
+            if options:
+                return options
+
+        return []
+
+    @staticmethod
+    def _service_price(service):
+        for key in ("serviceValue", "price", "value", "amount"):
+            try:
+                value = float(service.get(key))
+            except (AttributeError, TypeError, ValueError):
+                continue
+            if value >= 0:
+                return value
+        return None
+
+    def quote(self, destination_county_code, products):
+        if not self.subscription_key:
+            raise ChilexpressServiceError(
+                "Falta CHILEXPRESS_SUBSCRIPTION_KEY."
+            )
+
+        try:
+            response = requests.post(
+                self.RATING_URL,
+                json=self._build_payload(
+                    destination_county_code,
+                    products,
+                ),
+                headers={
+                    "Ocp-Apim-Subscription-Key": self.subscription_key,
+                    "Cache-Control": "no-cache",
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                },
+                timeout=self.TIMEOUT_SECONDS,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except (requests.RequestException, ValueError) as error:
+            raise ChilexpressServiceError(
+                f"No se pudo cotizar con Chilexpress: {error}"
+            ) from error
+
+        options = self._extract_options(data)
+        priced_options = [
+            (self._service_price(option), option)
+            for option in options
+        ]
+        priced_options = [
+            item
+            for item in priced_options
+            if item[0] is not None
+        ]
+
+        if not priced_options:
+            raise ChilexpressServiceError(
+                "Chilexpress no devolvió servicios cotizables."
+            )
+
+        price, service = min(priced_options, key=lambda item: item[0])
+        service_name = (
+            service.get("serviceDescription")
+            or service.get("description")
+            or service.get("serviceName")
+            or "Despacho Chilexpress"
+        )
+        service_code = str(
+            service.get("serviceTypeCode")
+            or service.get("serviceCode")
+            or service.get("code")
+            or "CHX_REAL"
+        )
+        delivery_term = (
+            service.get("deliveryDescription")
+            or service.get("deliveryTime")
+            or service.get("estimatedDelivery")
+            or MockShippingService.DELIVERY_TERM
+        )
+
+        return MockShippingService.format_response(
+            courier="Chilexpress",
+            service=str(service_name),
+            price=price,
+            delivery_term=str(delivery_term),
+            service_code=service_code,
+            mode="real",
+        )
