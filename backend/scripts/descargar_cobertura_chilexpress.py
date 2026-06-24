@@ -1,3 +1,12 @@
+"""Descarga y normaliza la cobertura GeoReference de Chilexpress.
+
+Configurar CHILEXPRESS_SUBSCRIPTION_KEY en backend/.env y ejecutar:
+    cd backend
+    python scripts/descargar_cobertura_chilexpress.py
+
+CHILEXPRESS_COVERAGE_BASE_URL es opcional y por defecto usa TEST.
+"""
+
 import json
 import os
 import sys
@@ -12,7 +21,7 @@ from dotenv import load_dotenv
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 ENV_PATH = BACKEND_DIR / ".env"
-OUTPUT_PATH = BACKEND_DIR / "locations" / "data" / "cobertura_chilexpress.json"
+OUTPUT_PATH = BACKEND_DIR / "locations" / "data" / "chilexpress_cobertura.json"
 
 load_dotenv(ENV_PATH)
 
@@ -127,6 +136,41 @@ def eliminar_duplicados(coberturas: list[dict]) -> list[dict]:
     return list(registros_unicos.values())
 
 
+def estado_operacional(delivery_available: bool, pickup_available: bool) -> str:
+    if delivery_available and pickup_available:
+        return "DELIVERY_AND_PICKUP"
+    if delivery_available:
+        return "DELIVERY_ONLY"
+    if pickup_available:
+        return "PICKUP_ONLY"
+    return "UNAVAILABLE"
+
+
+def normalizar_cobertura(cobertura: dict) -> dict:
+    # Chilexpress expone ind_ppd para cobertura de entrega y
+    # ind_rd para disponibilidad de retiro.
+    delivery_available = bool(cobertura.get("ind_ppd"))
+    pickup_available = bool(cobertura.get("ind_rd"))
+    offices = cobertura.get("offices")
+
+    return {
+        "comuna_code": str(cobertura.get("countyCode", "")).strip(),
+        "comuna_name": str(
+            cobertura.get("coverageName")
+            or cobertura.get("countyName")
+            or ""
+        ).strip(),
+        "enabled": delivery_available or pickup_available,
+        "operational_status": estado_operacional(
+            delivery_available,
+            pickup_available,
+        ),
+        "delivery_available": delivery_available,
+        "pickup_available": pickup_available,
+        "offices": offices if isinstance(offices, list) else [],
+    }
+
+
 def guardar_json_temporal(datos: dict) -> None:
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -171,7 +215,6 @@ def main() -> int:
     for region in regiones_api:
         region_id = str(region.get("regionId", "")).strip()
         region_name = str(region.get("regionName", "")).strip()
-        ine_region_code = region.get("ineRegionCode")
 
         if not region_id:
             print("Se omitió una región sin regionId.")
@@ -185,10 +228,12 @@ def main() -> int:
 
             regiones_guardadas.append(
                 {
-                    "regionId": region_id,
-                    "regionName": region_name,
-                    "ineRegionCode": ine_region_code,
-                    "coberturas": coberturas,
+                    "region_code": region_id,
+                    "region_name": region_name,
+                    "comunas": [
+                        normalizar_cobertura(cobertura)
+                        for cobertura in coberturas
+                    ],
                 }
             )
 
@@ -213,16 +258,16 @@ def main() -> int:
         return 1
 
     resultado = {
-        "generado_en": datetime.now(timezone.utc).isoformat(),
-        "fuente": "Chilexpress GeoReference REST API - testservices",
+        "source": "Chilexpress GeoReference REST API - testservices",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "base_url": BASE_URL,
-        "regiones": regiones_guardadas,
-        "regiones_con_error": regiones_con_error,
-        "resumen": {
-            "regiones_recibidas": len(regiones_api),
-            "regiones_guardadas": len(regiones_guardadas),
-            "regiones_con_error": len(regiones_con_error),
-            "coberturas_guardadas": total_coberturas,
+        "regions": regiones_guardadas,
+        "errors": regiones_con_error,
+        "summary": {
+            "regions_received": len(regiones_api),
+            "regions_saved": len(regiones_guardadas),
+            "regions_with_errors": len(regiones_con_error),
+            "coverage_areas_saved": total_coberturas,
         },
     }
 
