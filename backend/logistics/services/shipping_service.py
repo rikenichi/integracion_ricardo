@@ -108,6 +108,16 @@ class ChilexpressShippingDiagnostic:
             "CHILEXPRESS_RECEIVABLE_AMOUNT",
             "1000",
         )
+        self.timeout_seconds = max(
+            1,
+            self._positive_int(
+                self._env(
+                    "CHILEXPRESS_TIMEOUT_SECONDS",
+                    str(self.TIMEOUT_SECONDS),
+                ),
+                self.TIMEOUT_SECONDS,
+            ),
+        )
 
         shipping_base_url = self._env(
             "CHILEXPRESS_SHIPPING_BASE_URL",
@@ -571,6 +581,7 @@ class ChilexpressShippingDiagnostic:
                     "message": message,
                 }
 
+        forced_diagnosis = None
         try:
             response = requests.post(
                 self.endpoint,
@@ -581,12 +592,17 @@ class ChilexpressShippingDiagnostic:
                     "Accept": "application/json",
                     "Content-Type": "application/json",
                 },
-                timeout=self.TIMEOUT_SECONDS,
+                timeout=self.timeout_seconds,
             )
             status_code = response.status_code
             provider_response, message = self._provider_fields(
                 response
             )
+        except requests.Timeout as error:
+            status_code = None
+            provider_response = base_result["provider_response"]
+            message = self._summarize(str(error))
+            forced_diagnosis = "provider_timeout"
         except requests.RequestException as error:
             error_response = getattr(error, "response", None)
             status_code = getattr(error_response, "status_code", None)
@@ -598,7 +614,7 @@ class ChilexpressShippingDiagnostic:
                 provider_response = base_result["provider_response"]
                 message = self._summarize(str(error))
 
-        diagnosis = self._response_diagnosis(
+        diagnosis = forced_diagnosis or self._response_diagnosis(
             status_code,
             provider_response,
         )
