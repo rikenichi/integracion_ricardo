@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 import unicodedata
@@ -16,6 +17,9 @@ from logistics.services.chilexpress_service import (
     ChilexpressServiceError,
 )
 from logistics.services.mock_shipping_service import MockShippingService
+
+
+logger = logging.getLogger(__name__)
 
 
 COVERAGE_PATH = (
@@ -388,20 +392,71 @@ class CotizarDespachoView(APIView):
             )
 
         mode = os.getenv("CHILEXPRESS_MODE", "mock").strip().lower()
-        subscription_key = os.getenv(
+        rating_key = os.getenv(
+            "CHILEXPRESS_RATING_KEY",
+            "",
+        ).strip()
+        legacy_subscription_key = os.getenv(
             "CHILEXPRESS_SUBSCRIPTION_KEY",
             "",
         ).strip()
+        coverage_key_configured = bool(
+            os.getenv("CHILEXPRESS_COVERAGE_KEY", "").strip()
+        )
+        shipping_key_configured = bool(
+            os.getenv("CHILEXPRESS_SHIPPING_KEY", "").strip()
+        )
 
-        if mode != "real" or not subscription_key:
+        logger.warning(
+            "Chilexpress quote config chilexpress_mode=%s "
+            "coverage_key_configured=%s rating_key_configured=%s "
+            "shipping_key_configured=%s legacy_key_configured=%s "
+            "intento_real=%s",
+            mode or "mock",
+            str(coverage_key_configured).lower(),
+            str(bool(rating_key)).lower(),
+            str(shipping_key_configured).lower(),
+            str(bool(legacy_subscription_key)).lower(),
+            str(mode == "real" and bool(rating_key)).lower(),
+        )
+
+        if mode != "real":
+            logger.warning(
+                "Cotización Chilexpress usando mock "
+                "chilexpress_mode=%s rating_key_configured=%s "
+                "intento_real=false destination=%s",
+                mode or "mock",
+                str(bool(rating_key)).lower(),
+                county_code_destino,
+            )
             payload = MockShippingService.quote(mode="mock")
+        elif not rating_key:
+            logger.warning(
+                "Cotización Chilexpress usando fallback "
+                "chilexpress_mode=real rating_key_configured=false "
+                "intento_real=false destination=%s reason=rating_key_missing",
+                county_code_destino,
+            )
+            payload = MockShippingService.quote(mode="fallback")
         else:
+            logger.warning(
+                "Cotización Chilexpress intentando modo real "
+                "chilexpress_mode=real rating_key_configured=true "
+                "intento_real=true destination=%s",
+                county_code_destino,
+            )
             try:
                 payload = ChilexpressService().quote(
                     str(county_code_destino).strip().upper(),
                     productos,
                 )
-            except ChilexpressServiceError:
+            except ChilexpressServiceError as error:
+                logger.warning(
+                    "Cotización Chilexpress cayó a fallback "
+                    "destination=%s reason=%s",
+                    county_code_destino,
+                    error,
+                )
                 payload = MockShippingService.quote(mode="fallback")
 
         response = Response(payload)

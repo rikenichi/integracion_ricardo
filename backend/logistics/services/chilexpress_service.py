@@ -1,3 +1,4 @@
+import logging
 import os
 
 import requests
@@ -5,22 +6,42 @@ import requests
 from .mock_shipping_service import MockShippingService
 
 
+logger = logging.getLogger(__name__)
+
+
 class ChilexpressServiceError(RuntimeError):
     pass
 
 
 class ChilexpressService:
-    RATING_URL = (
+    DEFAULT_RATING_BASE_URL = (
         "https://testservices.wschilexpress.com/"
-        "rating/api/v1.0/rates/courier"
+        "rating/api/v1.0"
     )
     TIMEOUT_SECONDS = 15
 
     def __init__(self):
-        self.subscription_key = os.getenv(
+        self.mode = os.getenv(
+            "CHILEXPRESS_MODE",
+            "mock",
+        ).strip().lower()
+        self.rating_key = os.getenv(
+            "CHILEXPRESS_RATING_KEY",
+            "",
+        ).strip()
+        self.legacy_subscription_key = os.getenv(
             "CHILEXPRESS_SUBSCRIPTION_KEY",
             "",
         ).strip()
+        rating_base_url = os.getenv(
+            "CHILEXPRESS_RATING_BASE_URL",
+            self.DEFAULT_RATING_BASE_URL,
+        ).strip().rstrip("/")
+        self.rating_url = (
+            rating_base_url
+            if rating_base_url.endswith("/rates/courier")
+            else f"{rating_base_url}/rates/courier"
+        )
         self.origin_region = os.getenv(
             "CHILEXPRESS_ORIGIN_REGION",
             "RM",
@@ -148,20 +169,41 @@ class ChilexpressService:
         return None
 
     def quote(self, destination_county_code, products):
-        if not self.subscription_key:
+        if self.mode != "real":
             raise ChilexpressServiceError(
-                "Falta CHILEXPRESS_SUBSCRIPTION_KEY."
+                "CHILEXPRESS_MODE no está configurado como real."
             )
+
+        if not self.rating_key:
+            logger.warning(
+                "Chilexpress real no iniciado: falta rating key. "
+                "legacy_key_configured=%s",
+                str(bool(self.legacy_subscription_key)).lower(),
+            )
+            raise ChilexpressServiceError(
+                "Falta CHILEXPRESS_RATING_KEY."
+            )
+
+        logger.warning(
+            "Iniciando cotización Chilexpress real endpoint=%s "
+            "origin_region=%s origin_comuna=%s destination=%s "
+            "products=%s key_configured=true",
+            self.rating_url,
+            self.origin_region,
+            self.origin_comuna,
+            destination_county_code,
+            len(products),
+        )
 
         try:
             response = requests.post(
-                self.RATING_URL,
+                self.rating_url,
                 json=self._build_payload(
                     destination_county_code,
                     products,
                 ),
                 headers={
-                    "Ocp-Apim-Subscription-Key": self.subscription_key,
+                    "Ocp-Apim-Subscription-Key": self.rating_key,
                     "Cache-Control": "no-cache",
                     "Accept": "application/json",
                     "Content-Type": "application/json",
@@ -170,9 +212,26 @@ class ChilexpressService:
             )
             response.raise_for_status()
             data = response.json()
-        except (requests.RequestException, ValueError) as error:
+        except requests.RequestException as error:
+            error_response = getattr(error, "response", None)
+            status_code = getattr(error_response, "status_code", None)
+            response_text = getattr(error_response, "text", "")
+            summary = " ".join(str(response_text or "").split())[:300]
+            logger.warning(
+                "Chilexpress real falló status=%s message=%s",
+                status_code or "connection_error",
+                summary or str(error),
+            )
             raise ChilexpressServiceError(
                 f"No se pudo cotizar con Chilexpress: {error}"
+            ) from error
+        except ValueError as error:
+            logger.warning(
+                "Chilexpress real respondió JSON inválido status=%s",
+                response.status_code,
+            )
+            raise ChilexpressServiceError(
+                "Chilexpress devolvió una respuesta inválida."
             ) from error
 
         options = self._extract_options(data)
@@ -187,6 +246,12 @@ class ChilexpressService:
         ]
 
         if not priced_options:
+            logger.warning(
+                "Chilexpress real respondió sin servicios cotizables "
+                "status=%s destination=%s",
+                response.status_code,
+                destination_county_code,
+            )
             raise ChilexpressServiceError(
                 "Chilexpress no devolvió servicios cotizables."
             )
@@ -209,6 +274,16 @@ class ChilexpressService:
             or service.get("deliveryTime")
             or service.get("estimatedDelivery")
             or MockShippingService.DELIVERY_TERM
+        )
+
+        logger.warning(
+            "Chilexpress real respondió correctamente status=%s "
+            "destination=%s service_code=%s price=%s options=%s",
+            response.status_code,
+            destination_county_code,
+            service_code,
+            int(round(price)),
+            len(priced_options),
         )
 
         return MockShippingService.format_response(
