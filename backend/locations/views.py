@@ -522,6 +522,15 @@ class TrackingPedidoView(APIView):
                 "pedido": pedido.id,
                 "numero_tracking": envio.numero_tracking,
                 "courier": envio.courier,
+                "transport_order_number": envio.transport_order_number,
+                "certificate_number": envio.certificate_number,
+                "chilexpress_reference": envio.chilexpress_reference,
+                "ot_status": envio.ot_status,
+                "ot_created_at": (
+                    envio.ot_created_at.isoformat()
+                    if envio.ot_created_at
+                    else None
+                ),
                 "estado": envio.estado,
                 "estado_label": envio.estado_label,
                 "fecha_estimada_entrega": envio.fecha_estimada_entrega,

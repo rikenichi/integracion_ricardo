@@ -52,6 +52,14 @@ function normalizarDespachoTracking(payload, pedidoId) {
       base.transport_order_number ||
       `PED-${pedidoId}`,
     courier: base.courier || base.courier_nombre || 'Chilexpress',
+    transport_order_number:
+      base.transport_order_number || base.transportOrderNumber || null,
+    certificate_number:
+      base.certificate_number || base.certificateNumber || null,
+    chilexpress_reference:
+      base.chilexpress_reference || base.chilexpressReference || null,
+    ot_status: base.ot_status || base.otStatus || null,
+    ot_created_at: base.ot_created_at || base.otCreatedAt || null,
     estado: normalizarEstadoTracking(base.estado || base.estado_envio || base.status),
     fecha_estimada_entrega: base.fecha_estimada_entrega || base.fecha_entrega_estimada || null,
     direccion_destino: base.direccion_destino || base.destinationAddress || 'Direccion registrada en el pedido',
@@ -206,6 +214,41 @@ export default function TrackingPage() {
               <p>{despacho.direccion_destino}</p>
             </div>
           </div>
+
+          {(despacho.transport_order_number ||
+            despacho.courier?.toLowerCase() === 'chilexpress') && (
+            <div className="card" style={{ gridColumn: '1 / -1' }}>
+              <h3 className="section-title">Información Chilexpress</h3>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: 16,
+                }}
+              >
+                {[
+                  ['Courier', despacho.courier],
+                  ['Orden de transporte', despacho.transport_order_number],
+                  ['Certificado', despacho.certificate_number],
+                  ['Referencia Chilexpress', despacho.chilexpress_reference],
+                  ['Estado OT', despacho.ot_status],
+                  [
+                    'Fecha de creación OT',
+                    despacho.ot_created_at
+                      ? new Date(despacho.ot_created_at).toLocaleString('es-CL')
+                      : null,
+                  ],
+                ].map(([label, value]) => (
+                  <div key={label} className="tracking-destino">
+                    <p className="text-muted" style={{ fontSize: '0.8rem' }}>{label}</p>
+                    <p style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>
+                      {value || 'No registrado'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="card">
             <div className="flex-between" style={{ marginBottom: 12 }}>
