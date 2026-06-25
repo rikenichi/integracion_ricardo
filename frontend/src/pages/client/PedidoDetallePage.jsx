@@ -318,16 +318,32 @@ export default function PedidoDetallePage() {
                 </tr>
               </thead>
               <tbody>
-                {detalles.map((detalle) => (
-                  <tr key={detalle.id}>
-                    <td>{detalle.producto_codigo || detalle.producto_info?.codigo || '-'}</td>
-                    <td>{detalle.producto_nombre || detalle.producto_info?.nombre || '-'}</td>
-                    <td>{detalle.producto_info?.marca_nombre || 'No disponible'}</td>
-                    <td>{detalle.cantidad}</td>
-                    <td>{formatPrecio(detalle.precio_unitario)}</td>
-                    <td>{formatPrecio(detalle.subtotal)}</td>
-                  </tr>
-                ))}
+                {detalles.map((detalle, idx) => {
+                  const codigoProducto =
+                    detalle.producto_codigo ||
+                    detalle.producto_info?.codigo ||
+                    'sin-codigo'
+                  const nombreProducto =
+                    detalle.producto_nombre ||
+                    detalle.producto_info?.nombre ||
+                    'sin-nombre'
+
+                  return (
+                    <tr
+                      key={
+                        detalle.id ||
+                        `${codigoProducto}-${nombreProducto}-${idx}`
+                      }
+                    >
+                      <td>{detalle.producto_codigo || detalle.producto_info?.codigo || '-'}</td>
+                      <td>{detalle.producto_nombre || detalle.producto_info?.nombre || '-'}</td>
+                      <td>{detalle.producto_info?.marca_nombre || 'No disponible'}</td>
+                      <td>{detalle.cantidad}</td>
+                      <td>{formatPrecio(detalle.precio_unitario)}</td>
+                      <td>{formatPrecio(detalle.subtotal)}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
