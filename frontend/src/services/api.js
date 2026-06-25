@@ -32,6 +32,27 @@ function esRutaSinRefresh(url) {
   )
 }
 
+let refreshEnCurso = null
+
+export function refrescarAccessToken() {
+  const refresh = localStorage.getItem('refresh_token')
+  if (!refresh) return Promise.reject(new Error('Refresh token no disponible'))
+  if (refreshEnCurso) return refreshEnCurso
+
+  refreshEnCurso = axios
+    .post(`${API_URL}/accounts/login/refresh/`, { refresh })
+    .then(({ data }) => {
+      localStorage.setItem('access_token', data.access)
+      if (data.refresh) localStorage.setItem('refresh_token', data.refresh)
+      return data.access
+    })
+    .finally(() => {
+      refreshEnCurso = null
+    })
+
+  return refreshEnCurso
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token')
   if (token && !esRutaSinRefresh(config.url)) {
@@ -54,10 +75,9 @@ api.interceptors.response.use(
     if (puedeIntentarRefresh) {
       original._retry = true
       try {
-        const { data } = await axios.post(`${API_URL}/accounts/login/refresh/`, { refresh })
-        localStorage.setItem('access_token', data.access)
-        if (data.refresh) localStorage.setItem('refresh_token', data.refresh)
-        original.headers.Authorization = `Bearer ${data.access}`
+        const access = await refrescarAccessToken()
+        original.headers = original.headers || {}
+        original.headers.Authorization = `Bearer ${access}`
         return api(original)
       } catch {
         localStorage.clear()

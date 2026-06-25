@@ -4,6 +4,7 @@ import {
   login as apiLogin,
   logout as apiLogout,
   actualizarPerfil as apiActualizarPerfil,
+  refrescarAccessToken,
 } from '../services/api'
 
 const AuthContext = createContext(null)
@@ -77,6 +78,13 @@ function perfilDesdeToken(accessToken) {
       },
     },
   }
+}
+
+function accessAusenteOExpirado(accessToken) {
+  if (!accessToken) return true
+  const claims = decodificarJwt(accessToken)
+  if (!claims?.exp) return true
+  return claims.exp * 1000 <= Date.now() + 30000
 }
 
 function perfilDesdeLoginResponse(data, accessToken) {
@@ -195,15 +203,25 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let activo = true
     const init = async () => {
-      const access = localStorage.getItem('access_token')
+      let access = localStorage.getItem('access_token')
       const refresh = localStorage.getItem('refresh_token')
-      if (!access) {
+      if (!access && !refresh) {
         localStorage.removeItem('usuario')
-        if (!refresh) localStorage.removeItem('refresh_token')
         if (activo) setCargando(false)
         return
       }
       try {
+        if (refresh && accessAusenteOExpirado(access)) {
+          try {
+            access = await refrescarAccessToken()
+          } catch {
+            localStorage.removeItem('access_token')
+            localStorage.removeItem('refresh_token')
+            localStorage.removeItem('usuario')
+            if (activo) setUsuario(null)
+            return
+          }
+        }
         const perfil = await getPerfil()
         const usuarioPerfil = normalizarPerfil(perfil)
         guardarUsuario(usuarioPerfil)
@@ -269,8 +287,21 @@ export function AuthProvider({ children }) {
   }
 
   const refrescarPerfil = async () => {
-    const access = localStorage.getItem('access_token')
+    let access = localStorage.getItem('access_token')
+    const refresh = localStorage.getItem('refresh_token')
     let usuarioPerfil
+
+    if (refresh && accessAusenteOExpirado(access)) {
+      try {
+        access = await refrescarAccessToken()
+      } catch (error) {
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('refresh_token')
+        localStorage.removeItem('usuario')
+        setUsuario(null)
+        throw error
+      }
+    }
 
     try {
       const perfil = await getPerfil()
