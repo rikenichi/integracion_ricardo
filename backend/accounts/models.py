@@ -77,7 +77,7 @@ class EnvioPedido(models.Model):
     certificate_number = models.CharField(max_length=60, blank=True)
     chilexpress_reference = models.CharField(max_length=120, blank=True)
     provider_response = models.JSONField(default=dict, blank=True)
-    ot_status = models.CharField(max_length=120, blank=True)
+    ot_status = models.CharField(max_length=500, blank=True)
     ot_created_at = models.DateTimeField(null=True, blank=True)
     estado = models.CharField(max_length=30, default='generado')
     estado_label = models.CharField(max_length=60, default='Generado')

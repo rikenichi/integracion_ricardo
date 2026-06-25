@@ -6,6 +6,23 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+CONTACT_ENV_VARIABLES = (
+    "CHILEXPRESS_SENDER_NAME",
+    "CHILEXPRESS_SENDER_PHONE",
+    "CHILEXPRESS_SENDER_EMAIL",
+    "CHILEXPRESS_RECIPIENT_NAME",
+    "CHILEXPRESS_RECIPIENT_PHONE",
+    "CHILEXPRESS_RECIPIENT_EMAIL",
+)
+
+
+def variables_contacto_chilexpress_faltantes():
+    return [
+        variable
+        for variable in CONTACT_ENV_VARIABLES
+        if not os.getenv(variable, "").strip()
+    ]
+
 
 class ChilexpressShippingDiagnostic:
     DEFAULT_SHIPPING_BASE_URL = "https://testservices.wschilexpress.com"
@@ -886,6 +903,27 @@ def generar_ot_para_pedido(pedido, allow_request=False):
                 status_description=envio.ot_status or None,
                 provider_response=envio.provider_response,
                 mode="existing",
+            )
+
+        missing_contact_variables = (
+            variables_contacto_chilexpress_faltantes()
+        )
+        if missing_contact_variables:
+            status_description = (
+                "Faltan variables: "
+                + ", ".join(missing_contact_variables)
+            )
+            envio.ot_status = status_description
+            envio.save(update_fields=["ot_status", "actualizado_en"])
+            logger.warning(
+                "Chilexpress OT persistence blocked "
+                "reason=missing_contact_variables count=%s",
+                len(missing_contact_variables),
+            )
+            return _normalized_shipping_result(
+                status_description=status_description,
+                provider_response=envio.provider_response,
+                mode="configuration_error",
             )
 
         result = crear_orden_transporte_chilexpress(

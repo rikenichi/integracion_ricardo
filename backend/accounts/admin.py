@@ -58,7 +58,10 @@ def _generar_ot_desde_admin(modeladmin, request, pedido):
 
     modeladmin.message_user(
         request,
-        f'Pedido #{pedido.id}: Chilexpress rechazo la generacion de la OT.',
+        (
+            f'Pedido #{pedido.id}: '
+            f"{result.get('status_description') or 'Chilexpress rechazo la OT.'}"
+        ),
         level=messages.ERROR,
     )
 
