@@ -9,32 +9,141 @@ logger = logging.getLogger(__name__)
 
 class ChilexpressShippingDiagnostic:
     DEFAULT_SHIPPING_BASE_URL = "https://testservices.wschilexpress.com"
-    TRANSPORT_ORDERS_PATH = (
-        "/transport-orders/api/v1.0/transport-orders"
-    )
+    TRANSPORT_ORDERS_PATH = "/transport-orders/api/v1.0/transport-orders"
     TIMEOUT_SECONDS = 15
 
     def __init__(self):
-        self.shipping_key = os.getenv(
-            "CHILEXPRESS_SHIPPING_KEY",
-            "",
-        ).strip()
-        self.tcc = os.getenv(
-            "CHILEXPRESS_TCC",
-            "",
-        ).strip()
-        self.seller_rut = os.getenv(
-            "CHILEXPRESS_SELLER_RUT",
-            "",
-        ).strip()
-        shipping_base_url = os.getenv(
+        self.shipping_key = self._env("CHILEXPRESS_SHIPPING_KEY")
+        self.tcc = self._env("CHILEXPRESS_TCC")
+        self.marketplace_rut = self._env("CHILEXPRESS_MARKETPLACE_RUT")
+        self.seller_rut = self._env("CHILEXPRESS_SELLER_RUT")
+        self.origin_county_code = self._env(
+            "CHILEXPRESS_ORIGIN_COUNTY_CODE",
+            "PUDA",
+        ).upper()
+        self.label_type = self._env("CHILEXPRESS_LABEL_TYPE", "2")
+
+        self.destination_county_code = self._env(
+            "CHILEXPRESS_DESTINATION_COUNTY_CODE",
+            "PROV",
+        ).upper()
+        self.destination_street = self._env(
+            "CHILEXPRESS_DESTINATION_STREET",
+            "AVENIDA MANUEL MONTT",
+        )
+        self.destination_street_number = self._env(
+            "CHILEXPRESS_DESTINATION_STREET_NUMBER",
+            "427",
+        )
+        self.destination_commercial_office_id = self._env(
+            "CHILEXPRESS_DESTINATION_COMMERCIAL_OFFICE_ID",
+            "706",
+        )
+        self.delivery_on_commercial_office = self._env_bool(
+            "CHILEXPRESS_DELIVERY_ON_COMMERCIAL_OFFICE",
+            False,
+        )
+
+        self.return_county_code = self._env(
+            "CHILEXPRESS_RETURN_COUNTY_CODE",
+            "PLCA",
+        ).upper()
+        self.return_street = self._env(
+            "CHILEXPRESS_RETURN_STREET",
+            "SARMIENTO",
+        )
+        self.return_street_number = self._env(
+            "CHILEXPRESS_RETURN_STREET_NUMBER",
+            "120",
+        )
+
+        self.sender_name = self._env("CHILEXPRESS_SENDER_NAME")
+        self.sender_phone = self._env("CHILEXPRESS_SENDER_PHONE")
+        self.sender_email = self._env("CHILEXPRESS_SENDER_EMAIL")
+        self.recipient_name = self._env("CHILEXPRESS_RECIPIENT_NAME")
+        self.recipient_phone = self._env("CHILEXPRESS_RECIPIENT_PHONE")
+        self.recipient_email = self._env("CHILEXPRESS_RECIPIENT_EMAIL")
+
+        self.default_weight_kg = self._env(
+            "CHILEXPRESS_DEFAULT_WEIGHT_KG",
+            "1",
+        )
+        self.default_height_cm = self._env(
+            "CHILEXPRESS_DEFAULT_HEIGHT_CM",
+            "1",
+        )
+        self.default_width_cm = self._env(
+            "CHILEXPRESS_DEFAULT_WIDTH_CM",
+            "1",
+        )
+        self.default_length_cm = self._env(
+            "CHILEXPRESS_DEFAULT_LENGTH_CM",
+            "1",
+        )
+        self.service_delivery_code = self._env(
+            "CHILEXPRESS_SERVICE_DELIVERY_CODE",
+            "3",
+        )
+        self.product_code = self._env(
+            "CHILEXPRESS_PRODUCT_CODE",
+            "3",
+        )
+        self.delivery_reference = self._env(
+            "CHILEXPRESS_DELIVERY_REFERENCE",
+            "TEST-EOC-17",
+        )
+        self.group_reference = self._env(
+            "CHILEXPRESS_GROUP_REFERENCE",
+            "GRUPO",
+        )
+        self.declared_worth = self._env(
+            "CHILEXPRESS_DECLARED_WORTH",
+            "1000",
+        )
+        self.declared_content = self._env(
+            "CHILEXPRESS_DECLARED_CONTENT",
+            "1",
+        )
+        self.receivable_amount = self._env(
+            "CHILEXPRESS_RECEIVABLE_AMOUNT",
+            "1000",
+        )
+
+        shipping_base_url = self._env(
             "CHILEXPRESS_SHIPPING_BASE_URL",
             self.DEFAULT_SHIPPING_BASE_URL,
-        ).strip().rstrip("/")
+        ).rstrip("/")
         self.shipping_base_url = shipping_base_url
-        self.endpoint = (
-            f"{shipping_base_url}{self.TRANSPORT_ORDERS_PATH}"
-        )
+        self.endpoint = f"{shipping_base_url}{self.TRANSPORT_ORDERS_PATH}"
+
+    @staticmethod
+    def _env(name, default=""):
+        return os.getenv(name, default).strip()
+
+    @staticmethod
+    def _env_bool(name, default=False):
+        value = os.getenv(name)
+        if value is None:
+            return default
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+
+    @staticmethod
+    def _positive_int(value, default):
+        try:
+            number = int(value)
+        except (TypeError, ValueError):
+            return default
+        return number if number >= 0 else default
+
+    @staticmethod
+    def _numeric_string(value, default):
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return str(default)
+        if number <= 0:
+            return str(default)
+        return format(number, "g")
 
     @staticmethod
     def _summarize(value):
@@ -55,118 +164,417 @@ class ChilexpressShippingDiagnostic:
         return "provider_or_connection_error"
 
     @staticmethod
-    def _diagnose_provider_message(status_code, message):
-        normalized = str(message or "").lower()
-        if status_code == 400 and (
-            "tarjeta chilexpress" in normalized
-            or "customer card" in normalized
-            or "customercardnumber" in normalized
-            or "tcc" in normalized
-        ):
-            return "missing_or_invalid_tcc"
-        if status_code == 400 and (
-            "rut seller" in normalized
-            or "sellerrut" in normalized
-            or "seller rut" in normalized
-        ):
-            return "missing_or_invalid_seller_rut"
-        return ChilexpressShippingDiagnostic._diagnosis(status_code)
+    def _safe_detail(detail):
+        if not isinstance(detail, dict):
+            return {
+                "transportOrderNumber": None,
+                "reference": None,
+                "productDescription": None,
+                "serviceDescription": None,
+                "statusCode": None,
+                "statusDescription": None,
+                "errors": [],
+            }
+
+        errors = detail.get("errors") or detail.get("Errors") or []
+        if not isinstance(errors, list):
+            errors = [errors]
+        return {
+            "transportOrderNumber": (
+                detail.get("transportOrderNumber")
+                or detail.get("TransportOrderNumber")
+            ),
+            "reference": (
+                detail.get("reference")
+                or detail.get("Reference")
+            ),
+            "productDescription": (
+                detail.get("productDescription")
+                or detail.get("ProductDescription")
+            ),
+            "serviceDescription": (
+                detail.get("serviceDescription")
+                or detail.get("ServiceDescription")
+            ),
+            "statusCode": (
+                detail.get("statusCode")
+                if "statusCode" in detail
+                else detail.get("StatusCode")
+            ),
+            "statusDescription": (
+                detail.get("statusDescription")
+                or detail.get("StatusDescription")
+            ),
+            "errors": errors,
+        }
+
+    @classmethod
+    def _provider_fields(cls, response):
+        try:
+            data = response.json()
+        except (ValueError, AttributeError):
+            message = cls._summarize(getattr(response, "text", ""))
+            return {
+                "statusCode": None,
+                "statusDescription": None,
+                "errors": [],
+                "data": {
+                    "header": {"certificateNumber": None},
+                    "details": [],
+                },
+            }, message
+
+        if not isinstance(data, dict):
+            message = cls._summarize(data)
+            return {
+                "statusCode": None,
+                "statusDescription": None,
+                "errors": [],
+                "data": {
+                    "header": {"certificateNumber": None},
+                    "details": [],
+                },
+            }, message
+
+        root_status_code = (
+            data.get("statusCode")
+            if "statusCode" in data
+            else data.get("StatusCode")
+        )
+        status_description = (
+            data.get("statusDescription")
+            or data.get("StatusDescription")
+            or data.get("message")
+            or data.get("Message")
+        )
+        errors = data.get("errors") or data.get("Errors") or []
+        if not isinstance(errors, list):
+            errors = [errors]
+
+        provider_data = data.get("data") or data.get("Data") or {}
+        if not isinstance(provider_data, dict):
+            provider_data = {}
+        header = provider_data.get("header") or provider_data.get("Header") or {}
+        if not isinstance(header, dict):
+            header = {}
+
+        raw_details = (
+            provider_data.get("details")
+            or provider_data.get("Details")
+            or provider_data.get("detail")
+            or provider_data.get("Detail")
+            or []
+        )
+        if isinstance(raw_details, dict):
+            raw_details = [raw_details]
+        elif not isinstance(raw_details, list):
+            raw_details = []
+
+        safe_response = {
+            "statusCode": root_status_code,
+            "statusDescription": status_description,
+            "errors": errors,
+            "data": {
+                "header": {
+                    "certificateNumber": (
+                        header.get("certificateNumber")
+                        if "certificateNumber" in header
+                        else header.get("CertificateNumber")
+                    )
+                },
+                "details": [
+                    cls._safe_detail(detail)
+                    for detail in raw_details
+                ],
+            },
+        }
+        message = cls._summarize(
+            status_description
+            or errors
+            or safe_response["data"]["details"]
+            or data
+        )
+        return safe_response, message
 
     @staticmethod
-    def _numeric_identifier(value):
-        digits = "".join(
-            character
-            for character in str(value or "")
-            if character.isdigit()
+    def _response_diagnosis(http_status_code, provider_response):
+        if http_status_code not in {200, 201, 202}:
+            return ChilexpressShippingDiagnostic._diagnosis(
+                http_status_code
+            )
+
+        details = provider_response.get("data", {}).get("details", [])
+        if any(
+            detail.get("transportOrderNumber")
+            not in {None, "", 0, "0"}
+            for detail in details
+        ):
+            return "transport_order_created"
+
+        if details and any(
+            detail.get("errors")
+            or detail.get("statusCode") not in {None, "", 0, "0"}
+            or bool(detail.get("statusDescription"))
+            for detail in details
+        ):
+            return "payload_detail_rejected"
+
+        return "http_accepted_no_detail_success"
+
+    def _configuration(self):
+        addresses_configured = all(
+            (
+                self.destination_county_code,
+                self.destination_street,
+                self.destination_street_number,
+                self.return_county_code,
+                self.return_street,
+                self.return_street_number,
+            )
         )
-        return int(digits) if digits else None
+        if self.delivery_on_commercial_office:
+            addresses_configured = (
+                addresses_configured
+                and bool(self.destination_commercial_office_id)
+            )
+
+        contacts_configured = all(
+            (
+                self.sender_name,
+                self.sender_phone,
+                self.sender_email,
+                self.recipient_name,
+                self.recipient_phone,
+                self.recipient_email,
+            )
+        )
+        packages_configured = all(
+            (
+                self.default_weight_kg,
+                self.default_height_cm,
+                self.default_width_cm,
+                self.default_length_cm,
+                self.service_delivery_code,
+                self.product_code,
+                self.delivery_reference,
+                self.group_reference,
+                self.declared_worth,
+                self.declared_content,
+                self.receivable_amount,
+            )
+        )
+        return {
+            "shipping_key_configured": bool(self.shipping_key),
+            "tcc_configured": bool(self.tcc),
+            "marketplace_rut_configured": bool(self.marketplace_rut),
+            "seller_rut_configured": bool(self.seller_rut),
+            "addresses_configured": bool(addresses_configured),
+            "contacts_configured": bool(contacts_configured),
+            "packages_configured": bool(packages_configured),
+        }
+
+    def _payload(self):
+        destination_address = {
+            "addressId": 0,
+            "countyCoverageCode": str(
+                self.destination_county_code
+            ),
+            "streetName": self.destination_street,
+            "streetNumber": str(
+                self.destination_street_number
+            ),
+            "supplement": "",
+            "addressType": "DEST",
+            "deliveryOnCommercialOffice": (
+                self.delivery_on_commercial_office
+            ),
+        }
+        if self.delivery_on_commercial_office:
+            destination_address["commercialOfficeId"] = (
+                self._positive_int(
+                    self.destination_commercial_office_id,
+                    0,
+                )
+            )
+
+        return {
+            "header": {
+                "certificateNumber": 0,
+                "customerCardNumber": str(self.tcc),
+                "countyOfOriginCoverageCode": str(
+                    self.origin_county_code
+                ),
+                "labelType": self._positive_int(self.label_type, 2),
+                "marketplaceRut": str(self.marketplace_rut),
+                "sellerRut": str(self.seller_rut),
+            },
+            "details": [
+                {
+                    "addresses": [
+                        destination_address,
+                        {
+                            "addressId": 1,
+                            "countyCoverageCode": str(
+                                self.return_county_code
+                            ),
+                            "streetName": self.return_street,
+                            "streetNumber": str(
+                                self.return_street_number
+                            ),
+                            "supplement": "",
+                            "addressType": "DEV",
+                            "deliveryOnCommercialOffice": False,
+                            "commercialOfficeId": 0,
+                        },
+                    ],
+                    "contacts": [
+                        {
+                            "name": self.sender_name,
+                            "phoneNumber": str(self.sender_phone),
+                            "mail": self.sender_email,
+                            "contactType": "R",
+                        },
+                        {
+                            "name": self.recipient_name,
+                            "phoneNumber": str(self.recipient_phone),
+                            "mail": self.recipient_email,
+                            "contactType": "D",
+                        },
+                    ],
+                    "packages": [
+                        {
+                            "weight": self._numeric_string(
+                                self.default_weight_kg,
+                                1,
+                            ),
+                            "height": self._numeric_string(
+                                self.default_height_cm,
+                                1,
+                            ),
+                            "width": self._numeric_string(
+                                self.default_width_cm,
+                                1,
+                            ),
+                            "length": self._numeric_string(
+                                self.default_length_cm,
+                                1,
+                            ),
+                            "serviceDeliveryCode": str(
+                                self.service_delivery_code
+                            ),
+                            "productCode": str(self.product_code),
+                            "deliveryReference": str(
+                                self.delivery_reference
+                            ),
+                            "groupReference": str(
+                                self.group_reference
+                            ),
+                            "declaredValue": str(self.declared_worth),
+                            "declaredContent": str(
+                                self.declared_content
+                            ),
+                            "receivableAmountInDelivery": (
+                                self._positive_int(
+                                    self.receivable_amount,
+                                    0,
+                                )
+                            ),
+                        }
+                    ],
+                }
+            ],
+        }
 
     def diagnose(self, allow_request=False):
-        configured = bool(self.shipping_key)
-        tcc_configured = bool(self.tcc)
-        seller_rut_configured = bool(self.seller_rut)
+        configuration = self._configuration()
         base_result = {
             "shipping_base_url": self.shipping_base_url,
-            "shipping_key_configured": configured,
-            "tcc_configured": tcc_configured,
-            "seller_rut_configured": seller_rut_configured,
+            **configuration,
             "endpoint": self.endpoint,
             "request_executed": False,
             "status_code": None,
+            "statusCode": None,
+            "statusDescription": None,
+            "errors": [],
+            "provider_response": {
+                "statusCode": None,
+                "statusDescription": None,
+                "errors": [],
+                "data": {
+                    "header": {"certificateNumber": None},
+                    "details": [],
+                },
+            },
             "diagnosis": "diagnostic_disabled",
             "message": (
-                "Diagnóstico desactivado. "
+                "Diagnostico desactivado. "
                 "Usa allow_request=True de forma manual."
             ),
         }
 
         logger.warning(
             "Chilexpress Shipping diagnostic config "
-            "shipping_base_url=%s endpoint=%s "
-            "shipping_key_configured=%s tcc_configured=%s "
+            "shipping_key_configured=%s "
+            "tcc_configured=%s "
+            "marketplace_rut_configured=%s "
             "seller_rut_configured=%s "
-            "request_enabled=%s",
-            self.shipping_base_url,
-            self.endpoint,
-            str(configured).lower(),
-            str(tcc_configured).lower(),
-            str(seller_rut_configured).lower(),
-            str(bool(allow_request)).lower(),
+            "addresses_configured=%s "
+            "contacts_configured=%s "
+            "packages_configured=%s",
+            str(configuration["shipping_key_configured"]).lower(),
+            str(configuration["tcc_configured"]).lower(),
+            str(configuration["marketplace_rut_configured"]).lower(),
+            str(configuration["seller_rut_configured"]).lower(),
+            str(configuration["addresses_configured"]).lower(),
+            str(configuration["contacts_configured"]).lower(),
+            str(configuration["packages_configured"]).lower(),
         )
 
         if not allow_request:
             return base_result
 
-        if not configured:
-            return {
-                **base_result,
-                "diagnosis": "shipping_key_missing",
-                "message": "Falta CHILEXPRESS_SHIPPING_KEY.",
-            }
-
-        if not tcc_configured:
-            return {
-                **base_result,
-                "diagnosis": "missing_tcc",
-                "message": "Falta CHILEXPRESS_TCC.",
-            }
-
-        if not seller_rut_configured:
-            return {
-                **base_result,
-                "diagnosis": "missing_seller_rut",
-                "message": "Falta CHILEXPRESS_SELLER_RUT.",
-            }
-
-        customer_card_number = self._numeric_identifier(self.tcc)
-        seller_rut = self._numeric_identifier(self.seller_rut)
-        if not customer_card_number:
-            return {
-                **base_result,
-                "diagnosis": "missing_tcc",
-                "message": "CHILEXPRESS_TCC debe contener números.",
-            }
-        if not seller_rut:
-            return {
-                **base_result,
-                "diagnosis": "missing_seller_rut",
-                "message": (
-                    "CHILEXPRESS_SELLER_RUT debe contener números."
-                ),
-            }
-
-        # Solo se envían identificadores de cuenta dentro del encabezado.
-        # El payload sigue incompleto y no contiene datos para crear una OT.
-        diagnostic_payload = {
-            "header": {
-                "customerCardNumber": customer_card_number,
-                "sellerRut": seller_rut,
-            }
+        required_groups = {
+            "shipping_key_configured": (
+                "shipping_key_missing",
+                "Falta CHILEXPRESS_SHIPPING_KEY.",
+            ),
+            "tcc_configured": (
+                "missing_tcc",
+                "Falta CHILEXPRESS_TCC.",
+            ),
+            "marketplace_rut_configured": (
+                "missing_marketplace_rut",
+                "Falta CHILEXPRESS_MARKETPLACE_RUT.",
+            ),
+            "seller_rut_configured": (
+                "missing_seller_rut",
+                "Falta CHILEXPRESS_SELLER_RUT.",
+            ),
+            "addresses_configured": (
+                "missing_addresses",
+                "Faltan variables para construir addresses.",
+            ),
+            "contacts_configured": (
+                "missing_contacts",
+                "Faltan variables para construir contacts.",
+            ),
+            "packages_configured": (
+                "missing_packages",
+                "Faltan variables para construir packages.",
+            ),
         }
+        for flag, (diagnosis, message) in required_groups.items():
+            if not configuration[flag]:
+                return {
+                    **base_result,
+                    "diagnosis": diagnosis,
+                    "message": message,
+                }
+
         try:
             response = requests.post(
                 self.endpoint,
-                json=diagnostic_payload,
+                json=self._payload(),
                 headers={
                     "Ocp-Apim-Subscription-Key": self.shipping_key,
                     "Cache-Control": "no-cache",
@@ -176,31 +584,60 @@ class ChilexpressShippingDiagnostic:
                 timeout=self.TIMEOUT_SECONDS,
             )
             status_code = response.status_code
-            message = self._summarize(response.text)
+            provider_response, message = self._provider_fields(
+                response
+            )
         except requests.RequestException as error:
             error_response = getattr(error, "response", None)
             status_code = getattr(error_response, "status_code", None)
-            message = self._summarize(
-                getattr(error_response, "text", "")
-                or str(error)
-            )
+            if error_response is not None:
+                provider_response, message = (
+                    self._provider_fields(error_response)
+                )
+            else:
+                provider_response = base_result["provider_response"]
+                message = self._summarize(str(error))
 
-        diagnosis = self._diagnose_provider_message(
+        diagnosis = self._response_diagnosis(
             status_code,
-            message,
+            provider_response,
         )
         result = {
             **base_result,
             "request_executed": True,
             "status_code": status_code,
+            "statusCode": provider_response["statusCode"],
+            "statusDescription": provider_response["statusDescription"],
+            "errors": provider_response["errors"],
+            "provider_response": provider_response,
             "diagnosis": diagnosis,
             "message": message or "Proveedor sin mensaje.",
         }
         logger.warning(
             "Chilexpress Shipping diagnostic result "
-            "status_code=%s diagnosis=%s message=%s",
+            "status_code=%s diagnosis=%s status_description=%s "
+            "errors_count=%s",
             status_code or "connection_error",
             diagnosis,
-            result["message"],
+            self._summarize(provider_response["statusDescription"]),
+            len(provider_response["errors"]),
         )
+        for index, detail in enumerate(
+            provider_response["data"]["details"],
+            start=1,
+        ):
+            logger.warning(
+                "Chilexpress Shipping diagnostic detail "
+                "index=%s transport_order_number=%s reference=%s "
+                "product_description=%s service_description=%s "
+                "status_code=%s status_description=%s errors_count=%s",
+                index,
+                detail["transportOrderNumber"],
+                self._summarize(detail["reference"]),
+                self._summarize(detail["productDescription"]),
+                self._summarize(detail["serviceDescription"]),
+                detail["statusCode"],
+                self._summarize(detail["statusDescription"]),
+                len(detail["errors"]),
+            )
         return result
