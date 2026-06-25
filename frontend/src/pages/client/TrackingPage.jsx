@@ -67,6 +67,25 @@ function normalizarDespachoTracking(payload, pedidoId) {
   }
 }
 
+function formatearFechaOt(valor) {
+  if (!valor) return null
+  const fecha = new Date(valor)
+  if (Number.isNaN(fecha.getTime())) return valor
+
+  return new Intl.DateTimeFormat('es-CL', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(fecha).replace(',', '')
+}
+
+function formatearEstadoOt(valor) {
+  return valor === 'Extraccion exitosa' ? 'Extracción exitosa' : valor
+}
+
 export default function TrackingPage() {
   const { despachoId } = useParams()
   const { usuario } = useAuth()
@@ -231,17 +250,21 @@ export default function TrackingPage() {
                   ['Orden de transporte', despacho.transport_order_number],
                   ['Certificado', despacho.certificate_number],
                   ['Referencia Chilexpress', despacho.chilexpress_reference],
-                  ['Estado OT', despacho.ot_status],
+                  ['Estado OT', formatearEstadoOt(despacho.ot_status)],
                   [
                     'Fecha de creación OT',
-                    despacho.ot_created_at
-                      ? new Date(despacho.ot_created_at).toLocaleString('es-CL')
-                      : null,
+                    formatearFechaOt(despacho.ot_created_at),
                   ],
                 ].map(([label, value]) => (
                   <div key={label} className="tracking-destino">
                     <p className="text-muted" style={{ fontSize: '0.8rem' }}>{label}</p>
-                    <p style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>
+                    <p
+                      style={{
+                        fontWeight: 600,
+                        overflowWrap: 'anywhere',
+                        whiteSpace: label === 'Fecha de creación OT' ? 'nowrap' : 'normal',
+                      }}
+                    >
                       {value || 'No registrado'}
                     </p>
                   </div>
