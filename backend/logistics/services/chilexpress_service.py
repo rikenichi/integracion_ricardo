@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 
@@ -37,6 +38,7 @@ class ChilexpressService:
             "CHILEXPRESS_RATING_BASE_URL",
             self.DEFAULT_RATING_BASE_URL,
         ).strip().rstrip("/")
+        self.rating_base_url = rating_base_url
         self.rating_url = (
             rating_base_url
             if rating_base_url.endswith("/rates/courier")
@@ -184,24 +186,31 @@ class ChilexpressService:
                 "Falta CHILEXPRESS_RATING_KEY."
             )
 
+        payload = self._build_payload(
+            destination_county_code,
+            products,
+        )
         logger.warning(
-            "Iniciando cotización Chilexpress real endpoint=%s "
+            "Iniciando cotización Chilexpress real "
+            "chilexpress_mode=%s rating_key_configured=%s "
+            "rating_base_url=%s endpoint=%s "
             "origin_region=%s origin_comuna=%s destination=%s "
-            "products=%s key_configured=true",
+            "products=%s payload=%s",
+            self.mode,
+            str(bool(self.rating_key)).lower(),
+            self.rating_base_url,
             self.rating_url,
             self.origin_region,
             self.origin_comuna,
             destination_county_code,
             len(products),
+            json.dumps(payload, ensure_ascii=True, sort_keys=True),
         )
 
         try:
             response = requests.post(
                 self.rating_url,
-                json=self._build_payload(
-                    destination_county_code,
-                    products,
-                ),
+                json=payload,
                 headers={
                     "Ocp-Apim-Subscription-Key": self.rating_key,
                     "Cache-Control": "no-cache",
@@ -217,13 +226,23 @@ class ChilexpressService:
             status_code = getattr(error_response, "status_code", None)
             response_text = getattr(error_response, "text", "")
             summary = " ".join(str(response_text or "").split())[:300]
+            if status_code == 400:
+                diagnosis = "payload_rejected"
+            elif status_code in {401, 403}:
+                diagnosis = "credential_or_permission"
+            else:
+                diagnosis = "provider_or_connection_error"
             logger.warning(
-                "Chilexpress real falló status=%s message=%s",
+                "Chilexpress real falló status_code=%s diagnosis=%s "
+                "message=%s",
                 status_code or "connection_error",
+                diagnosis,
                 summary or str(error),
             )
             raise ChilexpressServiceError(
-                f"No se pudo cotizar con Chilexpress: {error}"
+                "No se pudo cotizar con Chilexpress "
+                f"(status={status_code or 'connection_error'}, "
+                f"diagnosis={diagnosis})."
             ) from error
         except ValueError as error:
             logger.warning(
