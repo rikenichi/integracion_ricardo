@@ -8,9 +8,9 @@ logger = logging.getLogger(__name__)
 
 
 class ChilexpressShippingDiagnostic:
-    DEFAULT_SHIPPING_BASE_URL = (
-        "https://testservices.wschilexpress.com/"
-        "transport-orders/api/v1.0"
+    DEFAULT_SHIPPING_BASE_URL = "https://testservices.wschilexpress.com"
+    TRANSPORT_ORDERS_PATH = (
+        "/transport-orders/api/v1.0/transport-orders"
     )
     TIMEOUT_SECONDS = 15
 
@@ -19,15 +19,21 @@ class ChilexpressShippingDiagnostic:
             "CHILEXPRESS_SHIPPING_KEY",
             "",
         ).strip()
+        self.tcc = os.getenv(
+            "CHILEXPRESS_TCC",
+            "",
+        ).strip()
+        self.seller_rut = os.getenv(
+            "CHILEXPRESS_SELLER_RUT",
+            "",
+        ).strip()
         shipping_base_url = os.getenv(
             "CHILEXPRESS_SHIPPING_BASE_URL",
             self.DEFAULT_SHIPPING_BASE_URL,
         ).strip().rstrip("/")
         self.shipping_base_url = shipping_base_url
         self.endpoint = (
-            shipping_base_url
-            if shipping_base_url.endswith("/transport-orders")
-            else f"{shipping_base_url}/transport-orders"
+            f"{shipping_base_url}{self.TRANSPORT_ORDERS_PATH}"
         )
 
     @staticmethod
@@ -48,11 +54,42 @@ class ChilexpressShippingDiagnostic:
             return "request_accepted_review_response"
         return "provider_or_connection_error"
 
+    @staticmethod
+    def _diagnose_provider_message(status_code, message):
+        normalized = str(message or "").lower()
+        if status_code == 400 and (
+            "tarjeta chilexpress" in normalized
+            or "customer card" in normalized
+            or "customercardnumber" in normalized
+            or "tcc" in normalized
+        ):
+            return "missing_or_invalid_tcc"
+        if status_code == 400 and (
+            "rut seller" in normalized
+            or "sellerrut" in normalized
+            or "seller rut" in normalized
+        ):
+            return "missing_or_invalid_seller_rut"
+        return ChilexpressShippingDiagnostic._diagnosis(status_code)
+
+    @staticmethod
+    def _numeric_identifier(value):
+        digits = "".join(
+            character
+            for character in str(value or "")
+            if character.isdigit()
+        )
+        return int(digits) if digits else None
+
     def diagnose(self, allow_request=False):
         configured = bool(self.shipping_key)
+        tcc_configured = bool(self.tcc)
+        seller_rut_configured = bool(self.seller_rut)
         base_result = {
             "shipping_base_url": self.shipping_base_url,
             "shipping_key_configured": configured,
+            "tcc_configured": tcc_configured,
+            "seller_rut_configured": seller_rut_configured,
             "endpoint": self.endpoint,
             "request_executed": False,
             "status_code": None,
@@ -66,10 +103,14 @@ class ChilexpressShippingDiagnostic:
         logger.warning(
             "Chilexpress Shipping diagnostic config "
             "shipping_base_url=%s endpoint=%s "
-            "shipping_key_configured=%s request_enabled=%s",
+            "shipping_key_configured=%s tcc_configured=%s "
+            "seller_rut_configured=%s "
+            "request_enabled=%s",
             self.shipping_base_url,
             self.endpoint,
             str(configured).lower(),
+            str(tcc_configured).lower(),
+            str(seller_rut_configured).lower(),
             str(bool(allow_request)).lower(),
         )
 
@@ -83,12 +124,49 @@ class ChilexpressShippingDiagnostic:
                 "message": "Falta CHILEXPRESS_SHIPPING_KEY.",
             }
 
-        # Un objeto vacío es deliberadamente inválido: permite comprobar
-        # endpoint y permisos sin incluir datos suficientes para crear una OT.
+        if not tcc_configured:
+            return {
+                **base_result,
+                "diagnosis": "missing_tcc",
+                "message": "Falta CHILEXPRESS_TCC.",
+            }
+
+        if not seller_rut_configured:
+            return {
+                **base_result,
+                "diagnosis": "missing_seller_rut",
+                "message": "Falta CHILEXPRESS_SELLER_RUT.",
+            }
+
+        customer_card_number = self._numeric_identifier(self.tcc)
+        seller_rut = self._numeric_identifier(self.seller_rut)
+        if not customer_card_number:
+            return {
+                **base_result,
+                "diagnosis": "missing_tcc",
+                "message": "CHILEXPRESS_TCC debe contener números.",
+            }
+        if not seller_rut:
+            return {
+                **base_result,
+                "diagnosis": "missing_seller_rut",
+                "message": (
+                    "CHILEXPRESS_SELLER_RUT debe contener números."
+                ),
+            }
+
+        # Solo se envían identificadores de cuenta dentro del encabezado.
+        # El payload sigue incompleto y no contiene datos para crear una OT.
+        diagnostic_payload = {
+            "header": {
+                "customerCardNumber": customer_card_number,
+                "sellerRut": seller_rut,
+            }
+        }
         try:
             response = requests.post(
                 self.endpoint,
-                json={},
+                json=diagnostic_payload,
                 headers={
                     "Ocp-Apim-Subscription-Key": self.shipping_key,
                     "Cache-Control": "no-cache",
@@ -107,7 +185,10 @@ class ChilexpressShippingDiagnostic:
                 or str(error)
             )
 
-        diagnosis = self._diagnosis(status_code)
+        diagnosis = self._diagnose_provider_message(
+            status_code,
+            message,
+        )
         result = {
             **base_result,
             "request_executed": True,
