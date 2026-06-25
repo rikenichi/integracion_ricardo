@@ -495,7 +495,7 @@ class ChilexpressShippingDiagnostic:
             ],
         }
 
-    def diagnose(self, allow_request=False):
+    def diagnose(self, allow_request=False, payload=None):
         configuration = self._configuration()
         base_result = {
             "shipping_base_url": self.shipping_base_url,
@@ -585,7 +585,7 @@ class ChilexpressShippingDiagnostic:
         try:
             response = requests.post(
                 self.endpoint,
-                json=self._payload(),
+                json=payload if isinstance(payload, dict) else self._payload(),
                 headers={
                     "Ocp-Apim-Subscription-Key": self.shipping_key,
                     "Cache-Control": "no-cache",
@@ -657,3 +657,163 @@ class ChilexpressShippingDiagnostic:
                 len(detail["errors"]),
             )
         return result
+
+
+def _existing_transport_order_number(source):
+    if source is None:
+        return None
+
+    if isinstance(source, dict):
+        for key in ("transport_order_number", "transportOrderNumber"):
+            value = source.get(key)
+            if value not in {None, "", 0, "0"}:
+                return value
+        for key in ("despacho", "envio"):
+            value = _existing_transport_order_number(source.get(key))
+            if value is not None:
+                return value
+        return None
+
+    for attribute in ("transport_order_number", "transportOrderNumber"):
+        value = getattr(source, attribute, None)
+        if value not in {None, "", 0, "0"}:
+            return value
+
+    despacho = getattr(source, "despacho", None)
+    value = _existing_transport_order_number(despacho)
+    if value is not None:
+        return value
+
+    try:
+        envio = getattr(source, "envio", None)
+    except Exception:
+        envio = None
+    return _existing_transport_order_number(envio)
+
+
+def _resolve_shipping_payload(service, payload_or_pedido):
+    if isinstance(payload_or_pedido, dict):
+        if "header" in payload_or_pedido and "details" in payload_or_pedido:
+            return payload_or_pedido
+        nested_payload = payload_or_pedido.get("chilexpress_payload")
+        if isinstance(nested_payload, dict):
+            return nested_payload
+
+    nested_payload = getattr(
+        payload_or_pedido,
+        "chilexpress_payload",
+        None,
+    )
+    if isinstance(nested_payload, dict):
+        return nested_payload
+
+    return service._payload()
+
+
+def _normalized_shipping_result(
+    *,
+    success=False,
+    transport_order_number=None,
+    certificate_number=None,
+    reference=None,
+    service_description=None,
+    status_code=None,
+    status_description=None,
+    provider_response=None,
+    mode="disabled",
+):
+    return {
+        "success": bool(success),
+        "transport_order_number": transport_order_number,
+        "certificate_number": certificate_number,
+        "reference": reference,
+        "service_description": service_description,
+        "status_code": status_code,
+        "status_description": status_description,
+        "provider_response": provider_response or {},
+        "mode": mode,
+    }
+
+
+def crear_orden_transporte_chilexpress(
+    payload_or_pedido,
+    allow_request=False,
+):
+    existing_number = _existing_transport_order_number(payload_or_pedido)
+    if existing_number is not None:
+        logger.warning(
+            "Chilexpress Shipping create skipped "
+            "reason=transport_order_already_exists"
+        )
+        return _normalized_shipping_result(
+            success=True,
+            transport_order_number=existing_number,
+            status_description="La orden de transporte ya existe.",
+            mode="existing",
+        )
+
+    if not allow_request:
+        logger.warning(
+            "Chilexpress Shipping create disabled allow_request=false"
+        )
+        return _normalized_shipping_result(
+            status_description=(
+                "Creacion desactivada. Usa allow_request=True "
+                "solo de forma manual."
+            ),
+            mode="disabled",
+        )
+
+    service = ChilexpressShippingDiagnostic()
+    payload = _resolve_shipping_payload(service, payload_or_pedido)
+    diagnostic_result = service.diagnose(
+        allow_request=True,
+        payload=payload,
+    )
+    provider_response = diagnostic_result.get("provider_response") or {}
+    provider_data = provider_response.get("data") or {}
+    header = provider_data.get("header") or {}
+    details = provider_data.get("details") or []
+    successful_detail = next(
+        (
+            detail
+            for detail in details
+            if detail.get("transportOrderNumber")
+            not in {None, "", 0, "0"}
+        ),
+        None,
+    )
+    selected_detail = successful_detail or (details[0] if details else {})
+    success = successful_detail is not None
+
+    result = _normalized_shipping_result(
+        success=success,
+        transport_order_number=selected_detail.get(
+            "transportOrderNumber"
+        ),
+        certificate_number=header.get("certificateNumber"),
+        reference=selected_detail.get("reference"),
+        service_description=selected_detail.get("serviceDescription"),
+        status_code=(
+            selected_detail.get("statusCode")
+            if selected_detail
+            else provider_response.get("statusCode")
+        ),
+        status_description=(
+            selected_detail.get("statusDescription")
+            or provider_response.get("statusDescription")
+            or diagnostic_result.get("message")
+        ),
+        provider_response=provider_response,
+        mode="real",
+    )
+    logger.warning(
+        "Chilexpress Shipping create result "
+        "success=%s mode=%s status_code=%s "
+        "transport_order_created=%s",
+        str(result["success"]).lower(),
+        result["mode"],
+        result["status_code"],
+        str(bool(result["transport_order_number"])).lower(),
+    )
+    return result
