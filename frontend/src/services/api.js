@@ -10,6 +10,25 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+const solicitudesGetEnCurso = new Map()
+
+function getDeduplicado(url, config) {
+  const params = config?.params
+    ? JSON.stringify(config.params)
+    : ''
+  const clave = `${url}?${params}`
+
+  if (solicitudesGetEnCurso.has(clave)) {
+    return solicitudesGetEnCurso.get(clave)
+  }
+
+  const solicitud = api.get(url, config).finally(() => {
+    solicitudesGetEnCurso.delete(clave)
+  })
+  solicitudesGetEnCurso.set(clave, solicitud)
+  return solicitud
+}
+
 const RUTAS_SIN_REFRESH = [
   '/accounts/login/',
   '/token/',
@@ -328,7 +347,8 @@ export const login = (username, password) =>
 export const logout = (refresh) =>
   api.post('/accounts/logout/', { refresh })
 
-export const getPerfil = () => api.get('/accounts/perfil/me/')
+export const getPerfil = () =>
+  getDeduplicado('/accounts/perfil/me/')
 export const actualizarPerfil = (datos) =>
   api.patch('/accounts/perfil/me/', datos)
 export const obtenerMisDirecciones = () => api.get('/accounts/mis-direcciones/')
@@ -567,7 +587,9 @@ export const getMisPedidos = async () =>
 export const getPedidosTodos = async () =>
   normalizarRespuestaPedido(await api.get('/orders/pedidos/todos/'))
 export const getPedido = async (id) =>
-  normalizarRespuestaPedido(await api.get(`/orders/pedidos/${id}/`))
+  normalizarRespuestaPedido(
+    await getDeduplicado(`/orders/pedidos/${id}/`)
+  )
 export const obtenerPedidoDetalle = getPedido
 export const aprobarPedido = (id, accion = 'APROBADO', comentario = '') =>
   api.post(`/orders/pedidos/${id}/aprobar/`, { accion, comentario })
@@ -676,7 +698,8 @@ export const generarTracking = (pedidoId) =>
 
 // Demo controlado: no hay endpoint de listado/detalle de despachos montado.
 export const getDespacho = (id) => respuestaDemo({ id })
-export const getTracking = (pedidoId) => api.get(`/logistics/envios/${pedidoId}/tracking/`)
+export const getTracking = (pedidoId) =>
+  getDeduplicado(`/logistics/envios/${pedidoId}/tracking/`)
 export const getDespachos = () => respuestaDemo([])
 
 // --- Courier experimental ---
