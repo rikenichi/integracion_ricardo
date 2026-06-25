@@ -68,6 +68,17 @@ class EnvioPedido(models.Model):
     )
     numero_tracking = models.CharField(max_length=40, unique=True)
     courier = models.CharField(max_length=80, default='Medistock despacho controlado')
+    transport_order_number = models.CharField(
+        max_length=60,
+        unique=True,
+        null=True,
+        blank=True,
+    )
+    certificate_number = models.CharField(max_length=60, blank=True)
+    chilexpress_reference = models.CharField(max_length=120, blank=True)
+    provider_response = models.JSONField(default=dict, blank=True)
+    ot_status = models.CharField(max_length=120, blank=True)
+    ot_created_at = models.DateTimeField(null=True, blank=True)
     estado = models.CharField(max_length=30, default='generado')
     estado_label = models.CharField(max_length=60, default='Generado')
     direccion_destino = models.CharField(max_length=255, blank=True)

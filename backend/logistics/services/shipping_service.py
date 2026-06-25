@@ -817,3 +817,113 @@ def crear_orden_transporte_chilexpress(
         str(bool(result["transport_order_number"])).lower(),
     )
     return result
+
+
+def generar_ot_para_pedido(pedido, allow_request=False):
+    existing_number = _existing_transport_order_number(pedido)
+    if existing_number is not None:
+        logger.warning(
+            "Chilexpress OT persistence skipped "
+            "reason=transport_order_already_exists"
+        )
+        return _normalized_shipping_result(
+            success=True,
+            transport_order_number=existing_number,
+            status_description="La orden de transporte ya existe.",
+            mode="existing",
+        )
+
+    if not allow_request:
+        auto_creation_enabled = ChilexpressShippingDiagnostic._env_bool(
+            "CHILEXPRESS_CREATE_OT_ON_PAYMENT",
+            False,
+        )
+        logger.warning(
+            "Chilexpress OT persistence disabled "
+            "allow_request=false automatic_setting=%s",
+            str(auto_creation_enabled).lower(),
+        )
+        return _normalized_shipping_result(
+            status_description=(
+                "Creacion de OT desactivada. "
+                "Se requiere allow_request=True."
+            ),
+            mode="disabled",
+        )
+
+    if not getattr(pedido, "pk", None):
+        return _normalized_shipping_result(
+            status_description="El pedido debe estar persistido.",
+            mode="invalid",
+        )
+
+    from django.db import transaction
+    from django.utils import timezone
+
+    from accounts.models import EnvioPedido, Pedido
+
+    with transaction.atomic():
+        pedido_bloqueado = Pedido.objects.select_for_update().get(
+            pk=pedido.pk
+        )
+        envio, _ = EnvioPedido.objects.get_or_create(
+            pedido=pedido_bloqueado,
+            defaults={
+                "numero_tracking": f"MED-{pedido_bloqueado.pk:06d}",
+            },
+        )
+
+        if envio.transport_order_number:
+            logger.warning(
+                "Chilexpress OT persistence skipped "
+                "reason=transport_order_already_exists"
+            )
+            return _normalized_shipping_result(
+                success=True,
+                transport_order_number=envio.transport_order_number,
+                certificate_number=envio.certificate_number or None,
+                reference=envio.chilexpress_reference or None,
+                status_description=envio.ot_status or None,
+                provider_response=envio.provider_response,
+                mode="existing",
+            )
+
+        result = crear_orden_transporte_chilexpress(
+            pedido_bloqueado,
+            allow_request=True,
+        )
+        envio.provider_response = result["provider_response"]
+        envio.ot_status = result["status_description"] or ""
+
+        if result["success"] and result["transport_order_number"]:
+            envio.courier = "Chilexpress"
+            envio.transport_order_number = str(
+                result["transport_order_number"]
+            )
+            envio.certificate_number = str(
+                result["certificate_number"] or ""
+            )
+            envio.chilexpress_reference = result["reference"] or ""
+            envio.ot_created_at = timezone.now()
+
+        envio.save(
+            update_fields=[
+                "courier",
+                "transport_order_number",
+                "certificate_number",
+                "chilexpress_reference",
+                "provider_response",
+                "ot_status",
+                "ot_created_at",
+                "actualizado_en",
+            ]
+        )
+
+    logger.warning(
+        "Chilexpress OT persistence result "
+        "success=%s mode=%s transport_order_saved=%s",
+        str(result["success"]).lower(),
+        result["mode"],
+        str(bool(result["transport_order_number"])).lower(),
+    )
+    return result
