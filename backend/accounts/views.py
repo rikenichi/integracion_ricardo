@@ -18,7 +18,13 @@ from transbank.common.options import WebpayOptions
 from transbank.webpay.webpay_plus.transaction import Transaction
 
 from inventory.models import Producto
-from .models import DireccionEntrega, EnvioPedido, Pedido, PerfilCliente
+from .models import (
+    DireccionEntrega,
+    DocumentoTributario,
+    EnvioPedido,
+    Pedido,
+    PerfilCliente,
+)
 
 
 User = get_user_model()
@@ -356,6 +362,29 @@ class PedidoCreateView(APIView):
                 'ot_created_at': envio_pedido.ot_created_at,
             }
 
+        try:
+            documento = pedido.documento_tributario
+        except DocumentoTributario.DoesNotExist:
+            documento = None
+
+        dte_info = None
+        if documento:
+            dte_info = {
+                'id': documento.id,
+                'pedido': pedido.id,
+                'tipo_documento': documento.tipo_documento,
+                'tipo_documento_nombre': (
+                    documento.get_tipo_documento_display()
+                ),
+                'proveedor': documento.proveedor,
+                'folio': documento.folio,
+                'estado': documento.estado,
+                'estado_dte': documento.get_estado_display(),
+                'monto_total': documento.monto_total,
+                'fecha_emision': documento.fecha_emision,
+                'url_pdf': documento.url_pdf or None,
+            }
+
         return {
             'id': pedido.id,
             'usuario_id': pedido.usuario_id,
@@ -373,6 +402,7 @@ class PedidoCreateView(APIView):
             'pago': pedido.pago,
             'despacho': pedido.despacho,
             'envio': envio,
+            'dte_info': dte_info,
             'costo_envio': pedido.despacho.get('costo_envio', 0),
             'sucursal_origen_id': pedido.datos.get('sucursal_origen_id'),
             'direccion_entrega_id': pedido.datos.get('direccion_entrega_id'),

@@ -89,3 +89,62 @@ class EnvioPedido(models.Model):
 
     def __str__(self):
         return f'{self.numero_tracking} - Pedido #{self.pedido_id}'
+
+
+class DocumentoTributario(models.Model):
+    TIPO_BOLETA = 'BOLETA'
+    TIPO_FACTURA = 'FACTURA'
+    TIPOS_DOCUMENTO = (
+        (TIPO_BOLETA, 'Boleta'),
+        (TIPO_FACTURA, 'Factura'),
+    )
+
+    PROVEEDOR_MOCK = 'MOCK'
+    PROVEEDOR_LIBREDTE = 'LIBREDTE'
+    PROVEEDORES = (
+        (PROVEEDOR_MOCK, 'Mock'),
+        (PROVEEDOR_LIBREDTE, 'LibreDTE'),
+    )
+
+    ESTADO_PENDIENTE = 'PENDIENTE'
+    ESTADO_EMITIDO = 'EMITIDO'
+    ESTADO_ERROR = 'ERROR'
+    ESTADOS = (
+        (ESTADO_PENDIENTE, 'Pendiente'),
+        (ESTADO_EMITIDO, 'Emitido'),
+        (ESTADO_ERROR, 'Error'),
+    )
+
+    pedido = models.OneToOneField(
+        Pedido,
+        on_delete=models.CASCADE,
+        related_name='documento_tributario',
+    )
+    tipo_documento = models.CharField(
+        max_length=10,
+        choices=TIPOS_DOCUMENTO,
+        default=TIPO_BOLETA,
+    )
+    proveedor = models.CharField(
+        max_length=10,
+        choices=PROVEEDORES,
+        default=PROVEEDOR_MOCK,
+    )
+    folio = models.CharField(max_length=60, unique=True)
+    estado = models.CharField(
+        max_length=12,
+        choices=ESTADOS,
+        default=ESTADO_PENDIENTE,
+    )
+    monto_total = models.PositiveBigIntegerField(default=0)
+    fecha_emision = models.DateTimeField(null=True, blank=True)
+    url_pdf = models.URLField(blank=True)
+    provider_response = models.JSONField(default=dict, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return (
+            f'{self.tipo_documento} {self.folio} '
+            f'- Pedido #{self.pedido_id}'
+        )
