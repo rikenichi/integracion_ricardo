@@ -43,6 +43,27 @@ function formatFecha(valor) {
   })
 }
 
+function formatFechaOt(valor) {
+  if (!valor) return 'No disponible'
+  const fecha = new Date(valor)
+  if (Number.isNaN(fecha.getTime())) return valor
+
+  const partes = new Intl.DateTimeFormat('es-CL', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(fecha)
+  const parte = (tipo) => partes.find((item) => item.type === tipo)?.value || ''
+  return `${parte('day')}-${parte('month')}-${parte('year')} ${parte('hour')}:${parte('minute')}`
+}
+
+function formatEstadoOt(valor) {
+  return valor === 'Extraccion exitosa' ? 'Extracción exitosa' : valor
+}
+
 function valor(dato) {
   return dato || 'No disponible'
 }
@@ -138,6 +159,7 @@ export default function PedidoDetallePage() {
   const detalles = Array.isArray(pedido?.detalles) ? pedido.detalles : []
   const pago = pedido?.pago_info || pedido?.pago
   const despacho = pedido?.despacho_info
+  const envio = pedido?.envio
   const dte = pedido?.dte_info
   const esCliente = ROLES_CLIENTE.includes(usuario?.rol)
   const estadoPedido = normalizarEstado(pedido?.estado)
@@ -311,6 +333,38 @@ export default function PedidoDetallePage() {
           </div>
         )}
       </section>
+
+      {(envio?.transport_order_number ||
+        envio?.courier?.toLowerCase() === 'chilexpress') && (
+        <section className="card pedido-detalle-section">
+          <h2>Información Chilexpress</h2>
+          <dl className="pedido-info-list">
+            <div><dt>Courier</dt><dd>{valor(envio.courier)}</dd></div>
+            <div>
+              <dt>Orden de transporte</dt>
+              <dd>{valor(envio.transport_order_number)}</dd>
+            </div>
+            <div>
+              <dt>Certificado</dt>
+              <dd>{valor(envio.certificate_number)}</dd>
+            </div>
+            <div>
+              <dt>Referencia Chilexpress</dt>
+              <dd>{valor(envio.chilexpress_reference)}</dd>
+            </div>
+            <div>
+              <dt>Estado OT</dt>
+              <dd>{valor(formatEstadoOt(envio.ot_status))}</dd>
+            </div>
+            <div>
+              <dt>Fecha creación OT</dt>
+              <dd style={{ whiteSpace: 'nowrap' }}>
+                {formatFechaOt(envio.ot_created_at)}
+              </dd>
+            </div>
+          </dl>
+        </section>
+      )}
 
       <div className="pedido-detalle-grid triple">
         <section className="card pedido-detalle-section pedido-status-card">

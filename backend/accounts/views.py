@@ -334,6 +334,27 @@ class PedidoCreateView(APIView):
             'RECHAZADO': 'Pago rechazado',
             'ANULADO': 'Pago anulado',
         }
+        try:
+            envio_pedido = pedido.envio
+        except EnvioPedido.DoesNotExist:
+            envio_pedido = None
+
+        envio = None
+        if envio_pedido:
+            envio = {
+                'numero_tracking': envio_pedido.numero_tracking,
+                'courier': envio_pedido.courier,
+                'estado': envio_pedido.estado,
+                'transport_order_number': (
+                    envio_pedido.transport_order_number
+                ),
+                'certificate_number': envio_pedido.certificate_number,
+                'chilexpress_reference': (
+                    envio_pedido.chilexpress_reference
+                ),
+                'ot_status': envio_pedido.ot_status,
+                'ot_created_at': envio_pedido.ot_created_at,
+            }
 
         return {
             'id': pedido.id,
@@ -351,6 +372,7 @@ class PedidoCreateView(APIView):
             'items': pedido.detalles,
             'pago': pedido.pago,
             'despacho': pedido.despacho,
+            'envio': envio,
             'costo_envio': pedido.despacho.get('costo_envio', 0),
             'sucursal_origen_id': pedido.datos.get('sucursal_origen_id'),
             'direccion_entrega_id': pedido.datos.get('direccion_entrega_id'),
