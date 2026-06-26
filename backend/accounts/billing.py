@@ -16,8 +16,11 @@ def configuracion_facturacion():
         'libredte_api_url_configured': bool(
             os.getenv('LIBREDTE_API_URL', '').strip()
         ),
-        'libredte_api_token_configured': bool(
-            os.getenv('LIBREDTE_API_TOKEN', '').strip()
+        'libredte_api_hash_configured': bool(
+            os.getenv('LIBREDTE_API_HASH', '').strip()
+        ),
+        'libredte_api_key_configured': bool(
+            os.getenv('LIBREDTE_API_KEY', '').strip()
         ),
         'libredte_rut_emisor_configured': bool(
             os.getenv('LIBREDTE_RUT_EMISOR', '').strip()
@@ -27,7 +30,7 @@ def configuracion_facturacion():
 
 def validar_configuracion_libredte():
     faltantes = []
-    for variable in ('LIBREDTE_API_TOKEN', 'LIBREDTE_RUT_EMISOR'):
+    for variable in ('LIBREDTE_API_HASH', 'LIBREDTE_RUT_EMISOR'):
         if not os.getenv(variable, '').strip():
             faltantes.append(variable)
     return faltantes
@@ -220,10 +223,8 @@ def generar_documento_libredte_para_pedido(pedido):
 
         payload = _payload_libredte(pedido_bloqueado)
         api_url = _libredte_api_url()
+        api_hash = os.getenv('LIBREDTE_API_HASH', '').strip()
         headers = {
-            'Authorization': (
-                f'Bearer {os.getenv("LIBREDTE_API_TOKEN", "").strip()}'
-            ),
             'Content-Type': 'application/json',
             'Accept': 'application/json',
         }
@@ -233,6 +234,7 @@ def generar_documento_libredte_para_pedido(pedido):
                 api_url,
                 json=payload,
                 headers=headers,
+                auth=('X', api_hash),
                 timeout=_libredte_timeout(),
             )
         except requests.RequestException as error:
