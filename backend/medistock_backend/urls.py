@@ -19,10 +19,13 @@ from accounts.views import (
 )
 from inventory.views import (
     CatalogoProductoView,
+    CategoriaAdminListView,
     CategoriaProductoView,
     InventarioListView,
     LoteListView,
+    MarcaAdminListView,
     MovimientoInventarioListView,
+    ProductoAdminListView,
     ProductoDetalleView,
 )
 from locations.views import (
@@ -44,6 +47,9 @@ urlpatterns = [
     path('api/inventory/catalogo/', CatalogoProductoView.as_view(), name='catalogo-productos'),
     path('api/inventory/public/categorias/', CategoriaProductoView.as_view(), name='categorias-productos'),
     path('api/inventory/public/productos/<str:codigo>/', ProductoDetalleView.as_view(), name='detalle-producto'),
+    path('api/inventory/productos/', ProductoAdminListView.as_view(), name='inventory-productos-admin'),
+    path('api/inventory/categorias/', CategoriaAdminListView.as_view(), name='inventory-categorias-admin'),
+    path('api/inventory/marcas/', MarcaAdminListView.as_view(), name='inventory-marcas-admin'),
     path('api/inventory/inventarios/', InventarioListView.as_view(), name='inventory-inventarios'),
     path('api/inventory/lotes/', LoteListView.as_view(), name='inventory-lotes'),
     path('api/inventory/movimientos/', MovimientoInventarioListView.as_view(), name='inventory-movimientos'),

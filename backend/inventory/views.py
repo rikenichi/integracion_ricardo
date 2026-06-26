@@ -102,7 +102,7 @@ class CategoriaProductoView(APIView):
 class InventarioListView(StaffOnlyMixin, APIView):
     def get(self, request):
         permiso = self.validar_staff(request)
-        if permiso:
+        if permiso is not None:
             return permiso
 
         productos = Producto.objects.order_by('id')
@@ -137,10 +137,61 @@ class InventarioListView(StaffOnlyMixin, APIView):
         return Response(data)
 
 
+class ProductoAdminListView(StaffOnlyMixin, APIView):
+    def get(self, request):
+        permiso = self.validar_staff(request)
+        if permiso is not None:
+            return permiso
+
+        productos = Producto.objects.order_by('id')
+        serializer = ProductoSerializer(productos, many=True)
+        return Response(serializer.data)
+
+
+class CategoriaAdminListView(StaffOnlyMixin, APIView):
+    def get(self, request):
+        permiso = self.validar_staff(request)
+        if permiso is not None:
+            return permiso
+
+        nombres = (
+            Producto.objects
+            .exclude(categoria_nombre='')
+            .values_list('categoria_nombre', flat=True)
+            .distinct()
+            .order_by('categoria_nombre')
+        )
+        categorias = [
+            {'id': index, 'nombre': nombre}
+            for index, nombre in enumerate(nombres, start=1)
+        ]
+        return Response(categorias)
+
+
+class MarcaAdminListView(StaffOnlyMixin, APIView):
+    def get(self, request):
+        permiso = self.validar_staff(request)
+        if permiso is not None:
+            return permiso
+
+        nombres = (
+            Producto.objects
+            .exclude(marca_nombre='')
+            .values_list('marca_nombre', flat=True)
+            .distinct()
+            .order_by('marca_nombre')
+        )
+        marcas = [
+            {'id': index, 'nombre': nombre}
+            for index, nombre in enumerate(nombres, start=1)
+        ]
+        return Response(marcas)
+
+
 class LoteListView(StaffOnlyMixin, APIView):
     def get(self, request):
         permiso = self.validar_staff(request)
-        if permiso:
+        if permiso is not None:
             return permiso
         return Response([])
 
@@ -148,6 +199,6 @@ class LoteListView(StaffOnlyMixin, APIView):
 class MovimientoInventarioListView(StaffOnlyMixin, APIView):
     def get(self, request):
         permiso = self.validar_staff(request)
-        if permiso:
+        if permiso is not None:
             return permiso
         return Response([])
