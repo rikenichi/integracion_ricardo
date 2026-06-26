@@ -33,9 +33,9 @@ def validar_configuracion_libredte():
     faltantes = []
     variables_requeridas = ['LIBREDTE_RUT_EMISOR']
     auth_mode = _libredte_auth_mode()
-    if auth_mode == 'basic':
+    if auth_mode == 'basic_hash':
         variables_requeridas.append('LIBREDTE_API_HASH')
-    elif auth_mode == 'apikey':
+    elif auth_mode in {'basic_key', 'apikey'}:
         variables_requeridas.append('LIBREDTE_API_KEY')
     else:
         variables_requeridas.extend((
@@ -50,9 +50,19 @@ def validar_configuracion_libredte():
 
 
 def _libredte_auth_mode():
-    auth_mode = os.getenv('LIBREDTE_AUTH_MODE', 'basic').strip().lower()
-    if auth_mode not in {'basic', 'apikey', 'both'}:
-        return 'basic'
+    auth_mode = os.getenv('LIBREDTE_AUTH_MODE', 'basic_key').strip().lower()
+    compatibilidad = {
+        'basic': 'basic_hash',
+        'both': 'basic_both',
+    }
+    auth_mode = compatibilidad.get(auth_mode, auth_mode)
+    if auth_mode not in {
+        'basic_hash',
+        'basic_key',
+        'basic_both',
+        'apikey',
+    }:
+        return 'basic_key'
     return auth_mode
 
 
@@ -91,11 +101,14 @@ def _libredte_endpoint_configurado():
 
 
 def _libredte_params_temporal():
+    ambiente = os.getenv('LIBREDTE_AMBIENTE', 'test').strip().lower()
     return {
         'normalizar': '1',
         'formato': 'json',
         'links': '1',
         'email': '0',
+        '_contribuyente_rut': os.getenv('LIBREDTE_RUT_EMISOR', '').strip(),
+        '_contribuyente_certificacion': '1' if ambiente == 'test' else '0',
     }
 
 
@@ -228,7 +241,7 @@ def _provider_response_base():
     auth_mode = _libredte_auth_mode()
     api_key_header = (
         _libredte_api_key_header_name()
-        if auth_mode in {'apikey', 'both'}
+        if auth_mode == 'apikey'
         else ''
     )
     return {
@@ -252,14 +265,24 @@ def _libredte_request_auth():
     }
     auth = None
 
-    if auth_mode in {'basic', 'both'}:
+    if auth_mode in {'basic_hash', 'basic_both'}:
         auth = ('X', os.getenv('LIBREDTE_API_HASH', '').strip())
 
-    if auth_mode in {'apikey', 'both'}:
+    if auth_mode == 'basic_key':
+        headers['Authorization'] = (
+            f'Basic {os.getenv("LIBREDTE_API_KEY", "").strip()}'
+        )
+
+    if auth_mode == 'apikey':
         headers[_libredte_api_key_header_name()] = os.getenv(
             'LIBREDTE_API_KEY',
             '',
         ).strip()
+
+    if auth_mode == 'basic_both':
+        headers['Authorization'] = (
+            f'Basic {os.getenv("LIBREDTE_API_KEY", "").strip()}'
+        )
 
     return headers, auth
 
