@@ -116,7 +116,7 @@ function estadoPasoPedido(pedido, pago, despacho, dte) {
     },
     {
       label: 'Documento tributario',
-      detail: dte ? `${dte.tipo_documento_nombre} folio ${dte.folio}` : 'Documento tributario pendiente',
+      detail: dte ? `${dte.tipo_documento} folio ${dte.folio}` : 'Documento tributario pendiente',
       status: dte ? 'completado' : 'pendiente',
     },
     {
@@ -435,9 +435,9 @@ export default function PedidoDetallePage() {
           {dte ? (
             <>
               <span className={`badge ${dte.estado === 'EMITIDO' ? 'badge-success' : 'badge-info'}`}>
-                {dte.estado_dte || dte.estado}
+                {dte.estado}
               </span>
-              <p><strong>Tipo:</strong> {dte.tipo_documento_nombre}</p>
+              <p><strong>Tipo:</strong> {dte.tipo_documento}</p>
               <p><strong>Folio:</strong> {dte.folio}</p>
               <p><strong>Proveedor:</strong> {dte.proveedor}</p>
               <p><strong>Monto:</strong> {formatPrecio(dte.monto_total)}</p>
