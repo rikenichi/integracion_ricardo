@@ -2,7 +2,11 @@ from django.contrib import admin
 from django.contrib import messages
 
 from logistics.services.shipping_service import generar_ot_para_pedido
-from .billing import generar_documento_mock_para_pedido
+from .billing import (
+    generar_documento_libredte_para_pedido,
+    generar_documento_mock_para_pedido,
+    validar_configuracion_libredte,
+)
 from .models import DocumentoTributario, EnvioPedido, Pedido
 
 
@@ -85,6 +89,7 @@ class PedidoAdmin(admin.ModelAdmin):
     actions = (
         'generar_ot_chilexpress',
         'generar_dte_mock',
+        'generar_dte_libredte',
     )
 
     @admin.action(
@@ -139,6 +144,73 @@ class PedidoAdmin(admin.ModelAdmin):
                     request,
                     f'Pedido #{pedido.id}: ya tiene un DTE.',
                     level=messages.WARNING,
+                )
+
+    @admin.action(
+        description='Generar DTE LibreDTE para pedidos seleccionados'
+    )
+    def generar_dte_libredte(self, request, queryset):
+        faltantes = validar_configuracion_libredte()
+        if faltantes:
+            self.message_user(
+                request,
+                f'No se puede usar LibreDTE. Faltan variables: {", ".join(faltantes)}',
+                level=messages.ERROR,
+            )
+            return
+
+        for pedido in queryset:
+            if pedido.estado != 'CONFIRMADO':
+                self.message_user(
+                    request,
+                    (
+                        f'Pedido #{pedido.id}: omitido porque '
+                        'no esta CONFIRMADO.'
+                    ),
+                    level=messages.WARNING,
+                )
+                continue
+
+            try:
+                documento, creado = (
+                    generar_documento_libredte_para_pedido(pedido)
+                )
+            except Exception as error:
+                self.message_user(
+                    request,
+                    (
+                        f'Pedido #{pedido.id}: no fue posible generar '
+                        f'el DTE LibreDTE. {str(error)[:180]}'
+                    ),
+                    level=messages.ERROR,
+                )
+                continue
+
+            if not creado:
+                self.message_user(
+                    request,
+                    f'Pedido #{pedido.id}: ya tiene un DTE.',
+                    level=messages.WARNING,
+                )
+                continue
+
+            if documento.estado == DocumentoTributario.ESTADO_EMITIDO:
+                self.message_user(
+                    request,
+                    (
+                        f'Pedido #{pedido.id}: DTE LibreDTE '
+                        f'{documento.folio} generado correctamente.'
+                    ),
+                    level=messages.SUCCESS,
+                )
+            else:
+                self.message_user(
+                    request,
+                    (
+                        f'Pedido #{pedido.id}: LibreDTE respondio con error. '
+                        'Revisa el DocumentoTributario generado.'
+                    ),
+                    level=messages.ERROR,
                 )
 
 
