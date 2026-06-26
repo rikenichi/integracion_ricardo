@@ -1,5 +1,7 @@
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -44,6 +46,18 @@ PRODUCTOS_INICIALES = [
 ]
 
 
+class StaffOnlyMixin:
+    permission_classes = [IsAuthenticated]
+
+    def validar_staff(self, request):
+        if request.user.is_staff or request.user.is_superuser:
+            return None
+        return Response(
+            {'detail': 'No tienes permiso para acceder a inventario.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+
 class CatalogoProductoView(APIView):
     def get(self, request):
         if not Producto.objects.exists():
@@ -83,3 +97,57 @@ class CategoriaProductoView(APIView):
             for index, nombre in enumerate(nombres, start=1)
         ]
         return Response(categorias)
+
+
+class InventarioListView(StaffOnlyMixin, APIView):
+    def get(self, request):
+        permiso = self.validar_staff(request)
+        if permiso:
+            return permiso
+
+        productos = Producto.objects.order_by('id')
+        data = []
+        for producto in productos:
+            data.append({
+                'id': producto.id,
+                'producto_id': producto.id,
+                'codigo': producto.codigo,
+                'sku': producto.sku,
+                'producto_codigo': producto.codigo,
+                'producto_sku': producto.sku,
+                'nombre': producto.nombre,
+                'producto_nombre': producto.nombre,
+                'categoria': producto.categoria_nombre,
+                'categoria_nombre': producto.categoria_nombre,
+                'marca_nombre': producto.marca_nombre,
+                'stock': producto.stock_disponible,
+                'stock_neto': producto.stock_disponible,
+                'cantidad_disponible': producto.stock_disponible,
+                'disponible': producto.stock_disponible,
+                'cantidad_reservada': 0,
+                'stock_critico': 5,
+                'precio': producto.precio_b2c,
+                'precio_b2c': producto.precio_b2c,
+                'precio_b2b': producto.precio_b2b,
+                'activo': producto.activo,
+                'disponible_venta': producto.activo and producto.stock_disponible > 0,
+                'sucursal': 1,
+                'sucursal_nombre': 'Sucursal Principal',
+            })
+        return Response(data)
+
+
+class LoteListView(StaffOnlyMixin, APIView):
+    def get(self, request):
+        permiso = self.validar_staff(request)
+        if permiso:
+            return permiso
+        return Response([])
+
+
+class MovimientoInventarioListView(StaffOnlyMixin, APIView):
+    def get(self, request):
+        permiso = self.validar_staff(request)
+        if permiso:
+            return permiso
+        return Response([])

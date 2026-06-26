@@ -17,7 +17,14 @@ from accounts.views import (
     WebpayEstadoView,
     WebpayIniciarView,
 )
-from inventory.views import CatalogoProductoView, CategoriaProductoView, ProductoDetalleView
+from inventory.views import (
+    CatalogoProductoView,
+    CategoriaProductoView,
+    InventarioListView,
+    LoteListView,
+    MovimientoInventarioListView,
+    ProductoDetalleView,
+)
 from locations.views import (
     ComunaListView,
     CotizarDespachoView,
@@ -37,6 +44,9 @@ urlpatterns = [
     path('api/inventory/catalogo/', CatalogoProductoView.as_view(), name='catalogo-productos'),
     path('api/inventory/public/categorias/', CategoriaProductoView.as_view(), name='categorias-productos'),
     path('api/inventory/public/productos/<str:codigo>/', ProductoDetalleView.as_view(), name='detalle-producto'),
+    path('api/inventory/inventarios/', InventarioListView.as_view(), name='inventory-inventarios'),
+    path('api/inventory/lotes/', LoteListView.as_view(), name='inventory-lotes'),
+    path('api/inventory/movimientos/', MovimientoInventarioListView.as_view(), name='inventory-movimientos'),
     path('api/locations/regions/', RegionListView.as_view(), name='locations-regions'),
     path('api/locations/comunas/', ComunaListView.as_view(), name='locations-comunas'),
     path('api/locations/sucursales/<int:sucursal_id>/', SucursalDetailView.as_view(), name='locations-sucursal'),
