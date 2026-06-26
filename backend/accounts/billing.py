@@ -22,6 +22,7 @@ def configuracion_facturacion():
         'libredte_api_key_configured': bool(
             os.getenv('LIBREDTE_API_KEY', '').strip()
         ),
+        'libredte_auth_mode': _libredte_auth_mode(),
         'libredte_rut_emisor_configured': bool(
             os.getenv('LIBREDTE_RUT_EMISOR', '').strip()
         ),
@@ -30,10 +31,33 @@ def configuracion_facturacion():
 
 def validar_configuracion_libredte():
     faltantes = []
-    for variable in ('LIBREDTE_API_HASH', 'LIBREDTE_RUT_EMISOR'):
+    variables_requeridas = ['LIBREDTE_RUT_EMISOR']
+    auth_mode = _libredte_auth_mode()
+    if auth_mode == 'basic':
+        variables_requeridas.append('LIBREDTE_API_HASH')
+    elif auth_mode == 'apikey':
+        variables_requeridas.append('LIBREDTE_API_KEY')
+    else:
+        variables_requeridas.extend((
+            'LIBREDTE_API_HASH',
+            'LIBREDTE_API_KEY',
+        ))
+
+    for variable in variables_requeridas:
         if not os.getenv(variable, '').strip():
             faltantes.append(variable)
     return faltantes
+
+
+def _libredte_auth_mode():
+    auth_mode = os.getenv('LIBREDTE_AUTH_MODE', 'basic').strip().lower()
+    if auth_mode not in {'basic', 'apikey', 'both'}:
+        return 'basic'
+    return auth_mode
+
+
+def _libredte_api_key_header_name():
+    return os.getenv('LIBREDTE_API_KEY_HEADER', 'X-API-Key').strip() or 'X-API-Key'
 
 
 def _libredte_api_url():
@@ -201,9 +225,17 @@ def _documento_error_libredte(pedido, provider_response):
 
 def _provider_response_base():
     url_config = _libredte_url_config()
+    auth_mode = _libredte_auth_mode()
+    api_key_header = (
+        _libredte_api_key_header_name()
+        if auth_mode in {'apikey', 'both'}
+        else ''
+    )
     return {
         'provider': 'libredte',
         'mode': os.getenv('LIBREDTE_AMBIENTE', 'test'),
+        'auth_mode': auth_mode,
+        'api_key_header_name': api_key_header,
         'url_base': url_config['url_base'],
         'endpoint': url_config['endpoint'],
         'full_url': url_config['full_url'],
@@ -212,17 +244,34 @@ def _provider_response_base():
     }
 
 
-def crear_documento_temporal_libredte(pedido):
-    payload = _payload_libredte(pedido)
+def _libredte_request_auth():
+    auth_mode = _libredte_auth_mode()
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
     }
+    auth = None
+
+    if auth_mode in {'basic', 'both'}:
+        auth = ('X', os.getenv('LIBREDTE_API_HASH', '').strip())
+
+    if auth_mode in {'apikey', 'both'}:
+        headers[_libredte_api_key_header_name()] = os.getenv(
+            'LIBREDTE_API_KEY',
+            '',
+        ).strip()
+
+    return headers, auth
+
+
+def crear_documento_temporal_libredte(pedido):
+    payload = _payload_libredte(pedido)
+    headers, auth = _libredte_request_auth()
     response = requests.post(
         _libredte_api_url(),
         json=payload,
         headers=headers,
-        auth=('X', os.getenv('LIBREDTE_API_HASH', '').strip()),
+        auth=auth,
         params=_libredte_params_temporal(),
         timeout=_libredte_timeout(),
     )
