@@ -313,6 +313,15 @@ class DocumentoTributarioAdmin(admin.ModelAdmin):
         elif response.get('error'):
             mensaje = response.get('error')
 
+        if str(status_code) == '402':
+            mensaje = (
+                'LibreDTE respondio HTTP 402. La integracion llego '
+                'correctamente al endpoint real, pero la cuenta/API key no '
+                'tiene permisos para emitir DTE por API. Revisar Servicio '
+                'Plus, usuario principal, RUT emisor, tipo de documento '
+                'habilitado, folios CAF y certificado digital.'
+            )
+
         return (
             f'HTTP: {status_code} | '
             f'Endpoint: {endpoint} | '

@@ -13,6 +13,11 @@ from .models import DocumentoTributario, Pedido
 def configuracion_facturacion():
     return {
         'provider': os.getenv('BILLING_PROVIDER', 'mock').strip().lower(),
+        'recommended_provider': 'mock',
+        'recommended_reason': (
+            'MOCK demuestra el flujo completo sin emitir documentos reales; '
+            'LibreDTE queda disponible como integracion real-ready.'
+        ),
         'libredte_api_url_configured': bool(
             os.getenv('LIBREDTE_API_URL', '').strip()
         ),
@@ -448,6 +453,20 @@ def generar_documento_mock_para_pedido(pedido):
             provider_response={
                 'mode': 'mock',
                 'message': 'Documento tributario local de demostracion.',
+                'academic_evidence': {
+                    'libredte_real_ready': True,
+                    'real_endpoint_tested': '/dte/documentos/emitir',
+                    'real_provider_status_code': 402,
+                    'real_provider_result': (
+                        'LibreDTE respondio HTTP 402 por permisos de '
+                        'cuenta/contribuyente al intentar emitir por API.'
+                    ),
+                    'reason_for_mock': (
+                        'Por seguridad y ausencia de un emisor tributario '
+                        'real autorizado, se usa MOCK para demostrar el flujo '
+                        'completo sin emitir documentos reales ante SII.'
+                    ),
+                },
             },
         )
         return documento, True
