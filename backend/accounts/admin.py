@@ -286,13 +286,19 @@ class DocumentoTributarioAdmin(admin.ModelAdmin):
     @admin.display(description='Error proveedor')
     def error_proveedor(self, obj):
         response = obj.provider_response or {}
-        endpoint = response.get('endpoint') or 'No disponible'
+        endpoint = (
+            response.get('endpoint') or
+            response.get('full_url') or
+            response.get('document_url') or
+            'No disponible'
+        )
         status_code = response.get('status_code') or 'No disponible'
         body = response.get('response') or {}
 
-        mensaje = 'No disponible'
+        mensaje = response.get('message') or response.get('error_type') or 'No disponible'
         if isinstance(body, dict):
             mensaje = (
+                response.get('message') or
                 body.get('message') or
                 body.get('mensaje') or
                 body.get('error') or
@@ -300,7 +306,7 @@ class DocumentoTributarioAdmin(admin.ModelAdmin):
                 body.get('statusDescription') or
                 body.get('raw') or
                 body.get('errors') or
-                'No disponible'
+                mensaje
             )
         elif body:
             mensaje = str(body)

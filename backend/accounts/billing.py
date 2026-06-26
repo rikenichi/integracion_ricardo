@@ -203,10 +203,29 @@ def _resumen_respuesta(response):
         data = response.json()
     except ValueError:
         data = {'raw': response.text[:500]}
+    message = _mensaje_seguro_respuesta(data)
     return {
         'status_code': response.status_code,
+        'message': message,
         'response': data,
     }
+
+
+def _mensaje_seguro_respuesta(data):
+    if isinstance(data, dict):
+        mensaje = (
+            data.get('message') or
+            data.get('mensaje') or
+            data.get('error') or
+            data.get('detail') or
+            data.get('statusDescription') or
+            data.get('raw') or
+            data.get('errors')
+        )
+        return str(mensaje)[:500] if mensaje else 'Sin mensaje del proveedor'
+    if data:
+        return str(data)[:500]
+    return 'Sin mensaje del proveedor'
 
 
 def _buscar_valor(data, claves):
@@ -254,6 +273,15 @@ def _provider_response_base():
         'full_url': url_config['full_url'],
         'url_source': url_config['source'],
         'params': _libredte_params_temporal(),
+    }
+
+
+def _provider_response_exception(error, message):
+    return {
+        **_provider_response_base(),
+        'status_code': None,
+        'error_type': error.__class__.__name__,
+        'message': message,
     }
 
 
@@ -371,13 +399,19 @@ def generar_documento_libredte_para_pedido(pedido):
 
         try:
             response = crear_documento_temporal_libredte(pedido_bloqueado)
+        except requests.exceptions.Timeout as error:
+            documento = _documento_error_libredte(
+                pedido_bloqueado,
+                _provider_response_exception(
+                    error,
+                    'Timeout al conectar con LibreDTE',
+                ),
+            )
+            return documento, True
         except requests.RequestException as error:
             documento = _documento_error_libredte(
                 pedido_bloqueado,
-                {
-                    **_provider_response_base(),
-                    'error': str(error)[:500],
-                },
+                _provider_response_exception(error, str(error)[:500]),
             )
             return documento, True
 
