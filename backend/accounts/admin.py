@@ -277,7 +277,38 @@ class DocumentoTributarioAdmin(admin.ModelAdmin):
         'monto_total',
         'fecha_emision',
         'url_pdf',
+        'error_proveedor',
         'creado_en',
         'actualizado_en',
     )
     exclude = ('provider_response',)
+
+    @admin.display(description='Error proveedor')
+    def error_proveedor(self, obj):
+        response = obj.provider_response or {}
+        endpoint = response.get('endpoint') or 'No disponible'
+        status_code = response.get('status_code') or 'No disponible'
+        body = response.get('response') or {}
+
+        mensaje = 'No disponible'
+        if isinstance(body, dict):
+            mensaje = (
+                body.get('message') or
+                body.get('mensaje') or
+                body.get('error') or
+                body.get('detail') or
+                body.get('statusDescription') or
+                body.get('raw') or
+                body.get('errors') or
+                'No disponible'
+            )
+        elif body:
+            mensaje = str(body)
+        elif response.get('error'):
+            mensaje = response.get('error')
+
+        return (
+            f'HTTP: {status_code} | '
+            f'Endpoint: {endpoint} | '
+            f'Mensaje: {str(mensaje)[:500]}'
+        )
