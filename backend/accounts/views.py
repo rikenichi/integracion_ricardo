@@ -388,6 +388,17 @@ class PedidoCreateView(APIView):
         return {
             'id': pedido.id,
             'usuario_id': pedido.usuario_id,
+            'usuario': pedido.usuario_id,
+            'usuario_username': pedido.usuario.username,
+            'usuario_email': pedido.usuario.email,
+            'usuario_nombre': (
+                pedido.usuario.get_full_name() or pedido.usuario.username
+            ),
+            'usuario_rol': (
+                'ADMINISTRADOR'
+                if pedido.usuario.is_staff or pedido.usuario.is_superuser
+                else 'CLIENTE'
+            ),
             'estado': pedido.estado,
             'estado_display': etiquetas_estado.get(
                 pedido.estado,
@@ -547,6 +558,27 @@ class MisPedidosView(APIView):
         if not request.user.is_superuser:
             pedidos = pedidos.filter(usuario=request.user)
 
+        return Response([
+            PedidoCreateView.representar(pedido)
+            for pedido in pedidos
+        ])
+
+
+class PedidosTodosView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not (request.user.is_staff or request.user.is_superuser):
+            return Response(
+                {'detail': 'No tienes permiso para listar todos los pedidos.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        pedidos = (
+            Pedido.objects
+            .select_related('usuario', 'envio', 'documento_tributario')
+            .order_by('-creado_en')
+        )
         return Response([
             PedidoCreateView.representar(pedido)
             for pedido in pedidos
