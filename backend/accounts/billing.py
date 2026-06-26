@@ -37,12 +37,26 @@ def validar_configuracion_libredte():
 
 
 def _libredte_api_url():
+    return _libredte_url_config()['full_url']
+
+
+def _libredte_url_config():
+    temporal_url = os.getenv('LIBREDTE_TEMPORAL_URL', '').strip()
     base_url = os.getenv('LIBREDTE_API_URL', 'https://www.libredte.cl').strip()
-    endpoint = os.getenv(
-        'LIBREDTE_TEMPORAL_ENDPOINT',
-        '/api/dte/documentos/emitir',
-    ).strip()
-    return urljoin(f'{base_url.rstrip("/")}/', endpoint.lstrip('/'))
+    endpoint = _libredte_endpoint_configurado()
+    if temporal_url:
+        return {
+            'url_base': '',
+            'endpoint': '',
+            'full_url': temporal_url,
+            'source': 'LIBREDTE_TEMPORAL_URL',
+        }
+    return {
+        'url_base': base_url,
+        'endpoint': endpoint,
+        'full_url': urljoin(f'{base_url.rstrip("/")}/', endpoint.lstrip('/')),
+        'source': 'LIBREDTE_API_URL+LIBREDTE_TEMPORAL_ENDPOINT',
+    }
 
 
 def _libredte_endpoint_configurado():
@@ -185,6 +199,19 @@ def _documento_error_libredte(pedido, provider_response):
     )
 
 
+def _provider_response_base():
+    url_config = _libredte_url_config()
+    return {
+        'provider': 'libredte',
+        'mode': os.getenv('LIBREDTE_AMBIENTE', 'test'),
+        'url_base': url_config['url_base'],
+        'endpoint': url_config['endpoint'],
+        'full_url': url_config['full_url'],
+        'url_source': url_config['source'],
+        'params': _libredte_params_temporal(),
+    }
+
+
 def crear_documento_temporal_libredte(pedido):
     payload = _payload_libredte(pedido)
     headers = {
@@ -276,10 +303,7 @@ def generar_documento_libredte_para_pedido(pedido):
             documento = _documento_error_libredte(
                 pedido_bloqueado,
                 {
-                    'provider': 'libredte',
-                    'mode': os.getenv('LIBREDTE_AMBIENTE', 'test'),
-                    'endpoint': _libredte_endpoint_configurado(),
-                    'params': _libredte_params_temporal(),
+                    **_provider_response_base(),
                     'error': str(error)[:500],
                 },
             )
@@ -290,10 +314,7 @@ def generar_documento_libredte_para_pedido(pedido):
             documento = _documento_error_libredte(
                 pedido_bloqueado,
                 {
-                    'provider': 'libredte',
-                    'mode': os.getenv('LIBREDTE_AMBIENTE', 'test'),
-                    'endpoint': _libredte_endpoint_configurado(),
-                    'params': _libredte_params_temporal(),
+                    **_provider_response_base(),
                     **resumen,
                 },
             )
@@ -326,10 +347,7 @@ def generar_documento_libredte_para_pedido(pedido):
             fecha_emision=timezone.now(),
             url_pdf=str(url_pdf),
             provider_response={
-                'provider': 'libredte',
-                'mode': os.getenv('LIBREDTE_AMBIENTE', 'test'),
-                'endpoint': _libredte_endpoint_configurado(),
-                'params': _libredte_params_temporal(),
+                **_provider_response_base(),
                 **resumen,
             },
         )
