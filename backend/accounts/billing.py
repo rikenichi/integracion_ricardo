@@ -40,9 +40,25 @@ def _libredte_api_url():
     base_url = os.getenv('LIBREDTE_API_URL', 'https://www.libredte.cl').strip()
     endpoint = os.getenv(
         'LIBREDTE_TEMPORAL_ENDPOINT',
-        '/api/dte/documentos/temporales',
+        '/api/dte/documentos/emitir',
     ).strip()
     return urljoin(f'{base_url.rstrip("/")}/', endpoint.lstrip('/'))
+
+
+def _libredte_endpoint_configurado():
+    return os.getenv(
+        'LIBREDTE_TEMPORAL_ENDPOINT',
+        '/api/dte/documentos/emitir',
+    ).strip()
+
+
+def _libredte_params_temporal():
+    return {
+        'normalizar': '1',
+        'formato': 'json',
+        'links': '1',
+        'email': '0',
+    }
 
 
 def _libredte_timeout():
@@ -77,18 +93,18 @@ def _normalizar_items_pedido(pedido):
             _valor_decimal(detalle.get('subtotal') or cantidad * precio_unitario)
         )
         items.append({
-            'nombre': nombre,
-            'cantidad': cantidad,
-            'precio_unitario': precio_unitario,
-            'monto': subtotal,
+            'IndExe': 0,
+            'NmbItem': str(nombre)[:80],
+            'QtyItem': cantidad,
+            'PrcItem': precio_unitario or subtotal,
         })
 
     if not items:
         items.append({
-            'nombre': f'Pedido #{pedido.pk}',
-            'cantidad': 1,
-            'precio_unitario': int(pedido.total or 0),
-            'monto': int(pedido.total or 0),
+            'IndExe': 0,
+            'NmbItem': f'Pedido #{pedido.pk}',
+            'QtyItem': 1,
+            'PrcItem': int(pedido.total or 0),
         })
     return items
 
@@ -101,23 +117,33 @@ def _payload_libredte(pedido):
         usuario.get_full_name() or
         usuario.username
     )
-    receptor_email = usuario.email or 'cliente@medistock.local'
+    direccion = (
+        pedido.datos.get('direccion_entrega') or
+        pedido.datos.get('direccion') or
+        'Sin direccion'
+    )
+    comuna = (
+        pedido.datos.get('comuna_nombre') or
+        pedido.datos.get('comuna') or
+        'Santiago'
+    )
     return {
-        'ambiente': os.getenv('LIBREDTE_AMBIENTE', 'test').strip() or 'test',
-        'tipo_documento': DocumentoTributario.TIPO_BOLETA,
-        'rut_emisor': os.getenv('LIBREDTE_RUT_EMISOR', '').strip(),
-        'pedido_id': pedido.pk,
-        'fecha_emision': timezone.now().date().isoformat(),
-        'receptor': {
-            'rut': pedido.datos.get('rut_receptor') or '66666666-6',
-            'razon_social': receptor_nombre,
-            'giro': 'Persona natural',
-            'email': receptor_email,
+        'Encabezado': {
+            'IdDoc': {
+                'TipoDTE': 39,
+            },
+            'Emisor': {
+                'RUTEmisor': os.getenv('LIBREDTE_RUT_EMISOR', '').strip(),
+            },
+            'Receptor': {
+                'RUTRecep': pedido.datos.get('rut_receptor') or '66666666-6',
+                'RznSocRecep': str(receptor_nombre)[:100],
+                'GiroRecep': 'Persona natural',
+                'DirRecep': str(direccion)[:70],
+                'CmnaRecep': str(comuna)[:20],
+            },
         },
-        'totales': {
-            'monto_total': int(pedido.total or 0),
-        },
-        'detalles': _normalizar_items_pedido(pedido),
+        'Detalle': _normalizar_items_pedido(pedido),
     }
 
 
@@ -156,6 +182,29 @@ def _documento_error_libredte(pedido, provider_response):
         monto_total=pedido.total,
         fecha_emision=None,
         provider_response=provider_response,
+    )
+
+
+def crear_documento_temporal_libredte(pedido):
+    payload = _payload_libredte(pedido)
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    }
+    response = requests.post(
+        _libredte_api_url(),
+        json=payload,
+        headers=headers,
+        auth=('X', os.getenv('LIBREDTE_API_HASH', '').strip()),
+        params=_libredte_params_temporal(),
+        timeout=_libredte_timeout(),
+    )
+    return response
+
+
+def generar_dte_real_desde_temporal(*args, **kwargs):
+    raise NotImplementedError(
+        'La generacion real del DTE desde temporal no esta activada.'
     )
 
 
@@ -221,32 +270,16 @@ def generar_documento_libredte_para_pedido(pedido):
         if documento_existente:
             return documento_existente, False
 
-        payload = _payload_libredte(pedido_bloqueado)
-        api_url = _libredte_api_url()
-        api_hash = os.getenv('LIBREDTE_API_HASH', '').strip()
-        headers = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        }
-
         try:
-            response = requests.post(
-                api_url,
-                json=payload,
-                headers=headers,
-                auth=('X', api_hash),
-                timeout=_libredte_timeout(),
-            )
+            response = crear_documento_temporal_libredte(pedido_bloqueado)
         except requests.RequestException as error:
             documento = _documento_error_libredte(
                 pedido_bloqueado,
                 {
                     'provider': 'libredte',
                     'mode': os.getenv('LIBREDTE_AMBIENTE', 'test'),
-                    'endpoint': os.getenv(
-                        'LIBREDTE_TEMPORAL_ENDPOINT',
-                        '/api/dte/documentos/temporales',
-                    ),
+                    'endpoint': _libredte_endpoint_configurado(),
+                    'params': _libredte_params_temporal(),
                     'error': str(error)[:500],
                 },
             )
@@ -259,20 +292,21 @@ def generar_documento_libredte_para_pedido(pedido):
                 {
                     'provider': 'libredte',
                     'mode': os.getenv('LIBREDTE_AMBIENTE', 'test'),
-                    'endpoint': os.getenv(
-                        'LIBREDTE_TEMPORAL_ENDPOINT',
-                        '/api/dte/documentos/temporales',
-                    ),
+                    'endpoint': _libredte_endpoint_configurado(),
+                    'params': _libredte_params_temporal(),
                     **resumen,
                 },
             )
             return documento, True
 
         data = resumen['response']
-        folio = _buscar_valor(data, ('folio', 'id', 'codigo', 'documento_id'))
+        codigo_temporal = _buscar_valor(
+            data,
+            ('codigo', 'id', 'documento_id', 'folio'),
+        )
         estado = str(
             _buscar_valor(data, ('estado', 'status', 'estado_dte')) or
-            'EMITIDO'
+            'PENDIENTE'
         ).upper()
         url_pdf = _buscar_valor(
             data,
@@ -282,9 +316,9 @@ def generar_documento_libredte_para_pedido(pedido):
             pedido=pedido_bloqueado,
             tipo_documento=DocumentoTributario.TIPO_BOLETA,
             proveedor=DocumentoTributario.PROVEEDOR_LIBREDTE,
-            folio=str(folio or f'LIBREDTE-{pedido_bloqueado.pk:06d}'),
+            folio=str(codigo_temporal or f'LIBREDTE-TMP-{pedido_bloqueado.pk:06d}'),
             estado=(
-                DocumentoTributario.ESTADO_EMITIDO
+                DocumentoTributario.ESTADO_PENDIENTE
                 if estado not in {'ERROR', 'RECHAZADO'}
                 else DocumentoTributario.ESTADO_ERROR
             ),
@@ -294,10 +328,8 @@ def generar_documento_libredte_para_pedido(pedido):
             provider_response={
                 'provider': 'libredte',
                 'mode': os.getenv('LIBREDTE_AMBIENTE', 'test'),
-                'endpoint': os.getenv(
-                    'LIBREDTE_TEMPORAL_ENDPOINT',
-                    '/api/dte/documentos/temporales',
-                ),
+                'endpoint': _libredte_endpoint_configurado(),
+                'params': _libredte_params_temporal(),
                 **resumen,
             },
         )
