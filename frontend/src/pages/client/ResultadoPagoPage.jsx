@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getPedido, simularPago, iniciarWebpay } from '../../services/api'
+import { getPedido, iniciarWebpay } from '../../services/api'
 import { obtenerCotizacionPedido } from '../../utils/cotizacionStorage'
 import './ResultadoPagoPage.css'
 
@@ -18,28 +18,15 @@ function pedidoPagado(pedido) {
     ['CONFIRMADO', 'APROBADO', 'AUTHORIZED'].includes(estadoPago)
 }
 
-// Solo métodos simulados — WebPay Plus tiene su propio botón de flujo real arriba
-const METODOS_SIMULADOS = [
-  { value: 'tarjeta_credito', label: 'Tarjeta de Crédito', icon: '💳' },
-  { value: 'tarjeta_debito', label: 'Tarjeta de Débito', icon: '💳' },
-  { value: 'transferencia', label: 'Transferencia Bancaria', icon: '🏦' },
-]
-
 export default function ResultadoPagoPage() {
   const { pedidoId } = useParams()
   const navigate = useNavigate()
   const [pedido, setPedido] = useState(null)
-  // Por defecto tarjeta_credito (webpay ya no está en esta lista)
-  const [metodoPago, setMetodoPago] = useState('tarjeta_credito')
-  const [numeroCuenta, setNumeroCuenta] = useState('4111 1111 1111 1111')
-  const [titularCuenta, setTitularCuenta] = useState('')
   const [loading, setLoading] = useState(true)
-  const [procesando, setProcesando] = useState(false)
   const [procesandoWebpay, setProcesandoWebpay] = useState(false)
-  const [resultado, setResultado] = useState(null)
   const [error, setError] = useState('')
 
-  // Form oculto que hace POST a Transbank
+  // Form oculto que hace POST a Transbank (fallback legacy)
   const webpayFormRef = useRef(null)
   const [webpayData, setWebpayData] = useState(null)
 
@@ -56,28 +43,6 @@ export default function ResultadoPagoPage() {
   const costoEnvio = Number(pedido?.costo_envio || cotizacionGuardada?.costo || 0)
   const totalConEnvio = Number(pedido?.total || 0) + costoEnvio
 
-  // Flujo demo local: no llama a rutas backend pendientes.
-  const handlePagoSimulado = async () => {
-    setProcesando(true)
-    setError('')
-    try {
-      const { data } = await simularPago({
-        pedido_id: parseInt(pedidoId),
-        metodo: metodoPago,
-        numero_tarjeta: numeroCuenta,
-        nombre_titular: titularCuenta,
-        monto: totalConEnvio,
-      })
-      setResultado(data)
-    } catch (err) {
-      const data = err.response?.data
-      if (data) setResultado(data)
-      else setError('Error al procesar el pago.')
-    } finally {
-      setProcesando(false)
-    }
-  }
-
   // Flujo real — llama a POST /api/payments/webpay/iniciar/ y redirige a Transbank
   const handleWebpayReal = async () => {
     setProcesandoWebpay(true)
@@ -89,7 +54,7 @@ export default function ResultadoPagoPage() {
         return
       }
       if (data?.url && data?.token) {
-        // Fallback legacy: Guardar datos del form; el useEffect lo somete automáticamente
+        // Fallback legacy: guardar datos del form; el useEffect lo somete automáticamente
         setWebpayData(data)
         return
       }
@@ -108,9 +73,9 @@ export default function ResultadoPagoPage() {
   }, [webpayData])
 
   if (loading) return <div className="spinner" />
-  if (error && !resultado) return <div className="page-container"><div className="alert alert-error">{error}</div></div>
+  if (error) return <div className="page-container"><div className="alert alert-error">{error}</div></div>
 
-  if (pedidoPagado(pedido) && !resultado) {
+  if (pedidoPagado(pedido)) {
     return (
       <div className="page-container">
         <div className="resultado-card card resultado-aprobado">
@@ -149,68 +114,7 @@ export default function ResultadoPagoPage() {
     )
   }
 
-  // ── Pantalla de resultado del flujo simulado ──
-  if (resultado) {
-    const aprobado = resultado.aprobado
-    return (
-      <div className="page-container">
-        <div className={`resultado-card card ${aprobado ? 'resultado-aprobado' : 'resultado-rechazado'}`}>
-          <div className="resultado-icon">{aprobado ? '✅' : '❌'}</div>
-          <h2>{aprobado ? '¡Pago aprobado!' : 'Pago rechazado'}</h2>
-          <p className="text-muted" style={{marginBottom:16}}>
-            {aprobado
-              ? 'Tu pedido ha sido confirmado y está siendo preparado.'
-              : `Motivo: ${resultado.motivo_rechazo || 'Error en el procesamiento'}`
-            }
-          </p>
-          {aprobado && (
-            <div className="resultado-detalles">
-              <div className="detalle-fila">
-                <span>N° Pedido</span><strong>#{pedidoId}</strong>
-              </div>
-              <div className="detalle-fila">
-                <span>Código transacción</span>
-                <strong style={{fontFamily:'monospace'}}>{resultado.codigo_transaccion}</strong>
-              </div>
-              <div className="detalle-fila">
-                <span>Método</span><strong>{resultado.metodo_display}</strong>
-              </div>
-              <div className="detalle-fila">
-                <span>Monto pagado</span><strong>{formatPrecio(resultado.monto)}</strong>
-              </div>
-              <div className="detalle-fila">
-                <span>Estado</span>
-                <span className="badge badge-success">{resultado.estado_display}</span>
-              </div>
-            </div>
-          )}
-          <div className="resultado-acciones">
-            {aprobado ? (
-              <>
-                <button className="btn btn-primary" onClick={() => navigate(`/tracking/${pedidoId}`)}>
-                  Ver tracking del pedido →
-                </button>
-                <button className="btn btn-secondary" onClick={() => navigate('/catalogo')}>
-                  Seguir comprando
-                </button>
-              </>
-            ) : (
-              <>
-                <button className="btn btn-primary" onClick={() => setResultado(null)}>
-                  Intentar de nuevo
-                </button>
-                <button className="btn btn-secondary" onClick={() => navigate('/catalogo')}>
-                  Volver al catálogo
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // ── Pantalla principal de selección de método ──
+  // ── Pantalla principal de pago ──
   return (
     <div className="page-container">
       <h1 className="page-title">Pago del Pedido #{pedidoId}</h1>
@@ -220,11 +124,10 @@ export default function ResultadoPagoPage() {
       {pedido && (
         <div className="pago-layout">
 
-          {/* ── Columna izquierda: métodos de pago ── */}
+          {/* ── Columna izquierda: Webpay Plus ── */}
           <div className="card">
-            <h3 className="section-title">Selecciona método de pago</h3>
+            <h3 className="section-title">Método de pago</h3>
 
-            {/* Sección 1: WebPay Plus real (llama a /api/payments/webpay/iniciar/) */}
             <div className="webpay-real-box">
               <div className="webpay-real-header">
                 <span className="webpay-logo">🏦</span>
@@ -234,7 +137,7 @@ export default function ResultadoPagoPage() {
                     Ambiente TEST
                   </span>
                   <p className="text-muted" style={{fontSize:'0.8rem', margin:'2px 0 0'}}>
-                    Integración real. Redirige al formulario de Transbank.
+                    Integración real con Transbank. Serás redirigido al formulario de pago seguro.
                   </p>
                 </div>
               </div>
@@ -250,6 +153,10 @@ export default function ResultadoPagoPage() {
                 }
               </button>
 
+              <p className="text-muted mt-1" style={{fontSize:'0.72rem', textAlign:'center'}}>
+                🔒 Pago seguro procesado por Transbank
+              </p>
+
               {/* Form oculto — se auto-submitea cuando webpayData queda en el DOM */}
               {webpayData && (
                 <form
@@ -262,70 +169,6 @@ export default function ResultadoPagoPage() {
                 </form>
               )}
             </div>
-
-            {/* Sección 2: Métodos simulados (demo académico) */}
-            <div className="metodos-divider">
-              <span>o usar método de pago simulado (demo)</span>
-            </div>
-
-            <div className="metodos-grid">
-              {METODOS_SIMULADOS.map(m => (
-                <button
-                  key={m.value}
-                  className={`metodo-btn ${metodoPago === m.value ? 'metodo-activo' : ''}`}
-                  onClick={() => setMetodoPago(m.value)}
-                >
-                  <span>{m.icon}</span>
-                  <span>{m.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {metodoPago !== 'transferencia' && (
-              <div className="mt-2">
-                <h4 style={{marginBottom:12, fontSize:'0.875rem'}}>Datos de tarjeta (simulados)</h4>
-                <div className="form-group">
-                  <label>Número de tarjeta</label>
-                  <input
-                    type="text" value={numeroCuenta}
-                    onChange={e => setNumeroCuenta(e.target.value)}
-                    placeholder="0000 0000 0000 0000" maxLength={19}
-                  />
-                  <small className="text-muted">Termina en 0000 = rechazo simulado</small>
-                </div>
-                <div className="form-group">
-                  <label>Nombre del titular</label>
-                  <input
-                    type="text" value={titularCuenta}
-                    onChange={e => setTitularCuenta(e.target.value)}
-                    placeholder="Nombre en la tarjeta"
-                  />
-                </div>
-              </div>
-            )}
-
-            {metodoPago === 'transferencia' && (
-              <div className="info-banco mt-2">
-                <p><strong>Banco:</strong> Banco MEDISTOCK</p>
-                <p><strong>Cuenta corriente:</strong> 12345678</p>
-                <p><strong>RUT:</strong> 76.543.210-9</p>
-                <p><strong>Email confirmación:</strong> pagos@medistock.cl</p>
-              </div>
-            )}
-
-            <button
-              className="btn btn-secondary btn-block btn-lg mt-2"
-              onClick={handlePagoSimulado}
-              disabled={procesando}
-            >
-              {procesando
-                ? 'Procesando...'
-                : `Pagar (simulado) ${formatPrecio(totalConEnvio)}`
-              }
-            </button>
-            <p className="text-muted mt-1" style={{fontSize:'0.72rem', textAlign:'center'}}>
-              🔒 MEDISTOCK Secure Gateway — pago simulado para demo
-            </p>
           </div>
 
           {/* ── Columna derecha: resumen del pedido ── */}
