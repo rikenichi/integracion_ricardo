@@ -3,10 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { obtenerPedidoDetalle } from '../../services/api'
 import { obtenerCotizacionPedido } from '../../utils/cotizacionStorage'
+import {
+  ESTADOS_CON_TRACKING,
+  ESTADOS_PENDIENTE_PAGO,
+  esPagoAprobado,
+  esPedidoPagado,
+  puedeVerTrackingPedido,
+} from '../../utils/estados'
 import './PedidoDetallePage.css'
 
-const ESTADOS_PAGABLES = ['pendiente', 'pendiente_pago', 'pendiente_de_pago']
-const ESTADOS_CON_TRACKING = ['confirmado', 'aprobado', 'en_preparacion', 'despachado', 'entregado']
 const ROLES_CLIENTE = ['cliente', 'cliente_b2c', 'cliente_b2b']
 
 function normalizarEstado(valor) {
@@ -85,9 +90,7 @@ function badgeEstadoPedido(estado) {
 
 function estadoPasoPedido(pedido, pago, despacho, dte) {
   const estadoPedido = normalizarEstado(pedido.estado)
-  const estadoPago = normalizarEstado(pago?.estado_pago || pago?.estado)
-  const pagoAprobado = ['confirmado', 'aprobado'].includes(estadoPedido) ||
-    ['confirmado', 'aprobado', 'authorized'].includes(estadoPago)
+  const pagoAprobado = esPedidoPagado(pedido) || esPagoAprobado(pago)
   const despachoGenerado = Boolean(despacho) || pagoAprobado
 
   return [
@@ -122,7 +125,7 @@ function estadoPasoPedido(pedido, pago, despacho, dte) {
     {
       label: 'Entrega / Tracking',
       detail: despacho?.numero_seguimiento || pedido.estado_display || pedido.estado,
-      status: estadoPedido === 'entregado' ? 'completado' : ESTADOS_CON_TRACKING.includes(estadoPedido) ? 'pendiente' : 'no-disponible',
+      status: estadoPedido === 'entregado' ? 'completado' : ESTADOS_CON_TRACKING.includes(estadoPedido) ? 'en-curso' : 'no-disponible',
     },
   ]
 }
@@ -163,18 +166,15 @@ export default function PedidoDetallePage() {
   const dte = pedido?.dte_info
   const esCliente = ROLES_CLIENTE.includes(usuario?.rol)
   const estadoPedido = normalizarEstado(pedido?.estado)
-  const estadoPago = normalizarEstado(pago?.estado_pago || pago?.estado)
-  const pagoAprobado = ['confirmado', 'aprobado'].includes(estadoPedido) ||
-    ['confirmado', 'aprobado', 'authorized'].includes(estadoPago)
+  const pagoAprobado = esPedidoPagado(pedido) || esPagoAprobado(pago)
 
   // Cotización Chilexpress guardada por el frontend al crear el pedido
   // (el backend aún no persiste costo_envio en el modelo Pedido).
   const cotizacionGuardada = useMemo(() => obtenerCotizacionPedido(id), [id])
   const costoEnvio = Number(pedido?.costo_envio || cotizacionGuardada?.costo || 0)
   const totalConEnvio = Number(pedido?.total || 0) + costoEnvio
-  const puedePagar = ESTADOS_PAGABLES.includes(estadoPedido) &&
-    esCliente
-  const puedeVerTracking = Boolean(despacho?.id) || ESTADOS_CON_TRACKING.includes(estadoPedido)
+  const puedePagar = ESTADOS_PENDIENTE_PAGO.includes(estadoPedido) && esCliente
+  const puedeVerTracking = puedeVerTrackingPedido(pedido)
   const timeline = useMemo(() => pedido ? estadoPasoPedido(pedido, pago, despacho, dte) : [], [pedido, pago, despacho, dte])
 
   if (loading) {
@@ -442,7 +442,7 @@ export default function PedidoDetallePage() {
           <h2>DTE</h2>
           {dte ? (
             <>
-              <span className={`badge ${dte.estado === 'EMITIDO' ? 'badge-success' : 'badge-info'}`}>
+              <span className={`badge ${normalizarEstado(dte.estado) === 'emitido' ? 'badge-success' : 'badge-info'}`}>
                 {dte.estado}
               </span>
               <p><strong>Tipo:</strong> {dte.tipo_documento}</p>

@@ -12,6 +12,12 @@ import {
 } from '../../services/api'
 import { Button, Spinner } from '../../components/ui'
 import { extraerLista, formatEstado, formatFecha, formatPrecio } from '../../utils/format'
+import {
+  ESTADOS_CON_DESPACHO,
+  ESTADOS_PENDIENTE_PAGO,
+  esPedidoPagado,
+  puedeVerTrackingPedido,
+} from '../../utils/estados'
 import './PanelPage.css'
 
 function safeLower(value) {
@@ -224,14 +230,7 @@ const ROLES_APROBACIONES_B2B = ['admin', 'ejecutivo', 'analista']
 const ROLES_DASHBOARD_ANALISTA = ['admin', 'analista']
 const ROLES_ADMIN_TRABAJADORES = ['admin']
 
-const ESTADOS_PAGABLES = ['pendiente', 'aprobado']
-const ESTADOS_CON_TRACKING = [
-  'pendiente',
-  'aprobado',
-  'en_preparacion',
-  'despachado',
-  'entregado',
-]
+// ESTADOS_PENDIENTE_PAGO y ESTADOS_CON_DESPACHO vienen de utils/estados.js
 
 export default function PanelPage() {
   const { usuario } = useAuth()
@@ -274,16 +273,16 @@ export default function PanelPage() {
     { id: 'inventario', label: 'Inventario', visible: ROLES_INVENTARIO.includes(rol) },
   ].filter(t => t.visible), [rol])
 
+  // pedido.estado ya está normalizado a lowercase por normalizarPedido()
   const puedeAprobar = (pedido) =>
-      ['admin', 'ejecutivo'].includes(rol) && pedido.estado === 'pendiente'
+      ['admin', 'ejecutivo'].includes(rol) && safeLower(pedido.estado) === 'pendiente'
 
   const puedePagar = (pedido) =>
-      ESTADOS_PAGABLES.includes(pedido.estado) &&
+      ESTADOS_PENDIENTE_PAGO.includes(pedido.estado) &&
       rol !== 'operador' &&
       Number(pedido.usuario) === Number(usuarioId)
 
-  const puedeVerTracking = (pedido) =>
-      ESTADOS_CON_TRACKING.includes(pedido.estado)
+  const puedeVerTracking = (pedido) => puedeVerTrackingPedido(pedido)
 
   const documentosPorPedido = useMemo(() => {
     return documentosTributarios.reduce((acc, documento) => {
@@ -331,9 +330,8 @@ export default function PanelPage() {
 
         // Derivar despachos desde pedidos: incluir pedidos con EnvioPedido (envio ≠ null)
         // o que estén CONFIRMADOS (al menos tienen despacho iniciado por Webpay commit).
-        const estadosConDespacho = ['confirmado', 'aprobado', 'en_preparacion', 'despachado', 'entregado']
         const despachosDerivados = listaPedidos
-          .filter(p => p.envio || estadosConDespacho.includes(safeLower(p.estado)))
+          .filter(p => p.envio || ESTADOS_CON_DESPACHO.includes(safeLower(p.estado)))
           .map(p => normalizarDespachoDesde(p))
         setDespachos(despachosDerivados)
       }
@@ -645,7 +643,7 @@ export default function PanelPage() {
                                             >
                                               Ver DTE
                                             </button>
-                                        ) : (
+                                        ) : esPedidoPagado(p) ? (
                                             <button
                                                 className="btn btn-secondary btn-sm"
                                                 disabled={generandoDtePedidoId === p.id}
@@ -653,7 +651,7 @@ export default function PanelPage() {
                                             >
                                               {generandoDtePedidoId === p.id ? 'Generando...' : 'Generar DTE'}
                                             </button>
-                                        )
+                                        ) : null
                                     )}
                                   </td>
                                 </tr>
