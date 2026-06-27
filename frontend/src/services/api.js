@@ -645,18 +645,9 @@ export const actualizarConciliacionPago = (id, datos) => {
 }
 
 // --- DTE simulado ---
-// Demo controlado: billing tiene modelos DTE, pero aun no expone URLs.
 export const obtenerDocumentosTributarios = () => respuestaDemo([])
-export const obtenerDocumentoTributarioDetalle = (id) => respuestaDemo({
-  id,
-  pedido: null,
-  tipo_documento_nombre: 'DTE demo',
-  folio: `DEMO-${id}`,
-  fecha_emision: new Date().toISOString(),
-  estado_dte: 'GENERADO_DEMO',
-  monto_total: 0,
-  detalles: [],
-})
+export const obtenerDocumentoTributarioDetalle = (id) =>
+  api.get(`/payments/dte/${id}/`)
 export const generarDteDesdePedido = (pedidoId) =>
   respuestaDemo({
     id: `demo-${pedidoId}`,

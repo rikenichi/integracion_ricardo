@@ -217,6 +217,14 @@ export default function PedidoDetallePage() {
               Ver tracking
             </button>
           )}
+          {dte?.id && (
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => navigate(`/dte/${dte.id}/comprobante`)}
+            >
+              Ver comprobante DTE
+            </button>
+          )}
           {dte?.url_pdf && (
             <a
               className="btn btn-secondary btn-sm"
@@ -224,7 +232,7 @@ export default function PedidoDetallePage() {
               target="_blank"
               rel="noreferrer"
             >
-              Ver comprobante DTE
+              Ver PDF DTE
             </a>
           )}
           {puedePagar && (
@@ -442,6 +450,14 @@ export default function PedidoDetallePage() {
               <p><strong>Proveedor:</strong> {dte.proveedor}</p>
               <p><strong>Monto:</strong> {formatPrecio(dte.monto_total)}</p>
               <p><strong>Emisión:</strong> {formatFecha(dte.fecha_emision)}</p>
+              {dte.id && (
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => navigate(`/dte/${dte.id}/comprobante`)}
+                >
+                  Ver comprobante
+                </button>
+              )}
               {dte.url_pdf && (
                 <a
                   className="btn btn-secondary btn-sm"
@@ -449,7 +465,7 @@ export default function PedidoDetallePage() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Ver documento
+                  Ver documento PDF
                 </a>
               )}
             </>

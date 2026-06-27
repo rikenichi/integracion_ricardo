@@ -890,3 +890,62 @@ class LogoutView(APIView):
             )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DocumentoTributarioDetalleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, doc_id):
+        try:
+            doc = DocumentoTributario.objects.select_related('pedido__usuario').get(pk=doc_id)
+        except DocumentoTributario.DoesNotExist:
+            return Response({'detail': 'Documento no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        pedido = doc.pedido
+        if pedido.usuario_id != request.user.id and not (request.user.is_staff or request.user.is_superuser):
+            return Response({'detail': 'Documento no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        comprobante = (doc.provider_response or {}).get('comprobante', {})
+
+        items_raw = comprobante.get('items', [])
+        detalles_api = []
+        for idx, item in enumerate(items_raw, start=1):
+            detalles_api.append({
+                'id': idx,
+                'nombre_producto': item.get('nombre', ''),
+                'descripcion': item.get('nombre', ''),
+                'cantidad': item.get('cantidad', 1),
+                'precio_unitario': item.get('precio_unitario', 0),
+                'monto_total_linea': item.get('subtotal', 0),
+                'codigo_producto': '',
+            })
+
+        monto_total = int(doc.monto_total or comprobante.get('total', 0))
+        monto_neto = int(comprobante.get('monto_neto') or round(monto_total / 1.19))
+        monto_iva = monto_total - monto_neto
+
+        data = {
+            'id': doc.id,
+            'pedido': pedido.id,
+            'tipo_documento': doc.tipo_documento,
+            'tipo_documento_nombre': doc.get_tipo_documento_display(),
+            'proveedor': doc.proveedor,
+            'folio': doc.folio,
+            'estado': doc.estado,
+            'estado_dte': doc.get_estado_display(),
+            'fecha_emision': doc.fecha_emision,
+            'url_pdf': doc.url_pdf or None,
+            'monto_total': monto_total,
+            'monto_neto': monto_neto,
+            'monto_iva': monto_iva,
+            'forma_pago': comprobante.get('forma_pago', ''),
+            'razon_social_receptor': comprobante.get('receptor_nombre', ''),
+            'cliente_username': pedido.usuario.username,
+            'rut_receptor': comprobante.get('receptor_rut', ''),
+            'email_receptor': comprobante.get('receptor_email', ''),
+            'direccion_receptor': comprobante.get('receptor_direccion', ''),
+            'subtotal_productos': comprobante.get('subtotal_productos', pedido.subtotal),
+            'costo_envio': comprobante.get('costo_envio', 0),
+            'detalles': detalles_api,
+        }
+        return Response(data)

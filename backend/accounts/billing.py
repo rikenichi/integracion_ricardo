@@ -416,6 +416,82 @@ def _payload_generar_desde_temporal(temporal_response):
     }
 
 
+def _datos_comprobante_mock(pedido):
+    """Extrae datos del pedido para guardarlos en el provider_response del mock."""
+    usuario = pedido.usuario
+    receptor_nombre = (
+        pedido.datos.get('nombre_receptor') or
+        pedido.datos.get('cliente_nombre') or
+        usuario.get_full_name() or
+        usuario.username
+    )
+    receptor_rut = (
+        pedido.datos.get('rut_receptor') or
+        getattr(getattr(usuario, 'perfil_cliente', None), 'rut', None) or
+        ''
+    )
+    receptor_email = (
+        pedido.datos.get('email_receptor') or
+        usuario.email or
+        ''
+    )
+    receptor_direccion = (
+        pedido.datos.get('direccion_entrega') or
+        pedido.datos.get('direccion') or
+        ''
+    )
+    if receptor_direccion and pedido.datos.get('comuna_nombre'):
+        receptor_direccion = f"{receptor_direccion}, {pedido.datos['comuna_nombre']}"
+
+    pago_info = pedido.pago or {}
+    forma_pago = str(
+        pago_info.get('metodo') or
+        pago_info.get('payment_type_code') or
+        pedido.datos.get('forma_pago') or
+        'WEBPAY'
+    ).upper()
+
+    total = int(pedido.total or 0)
+    costo_envio = int(pedido.despacho.get('costo_envio', 0))
+    subtotal_productos = int(pedido.subtotal or 0)
+    neto = round(total / 1.19)
+    iva = total - neto
+
+    items = []
+    for detalle in (pedido.detalles if isinstance(pedido.detalles, list) else []):
+        producto_info = detalle.get('producto_info') or {}
+        nombre = (
+            detalle.get('producto_nombre') or
+            producto_info.get('nombre') or
+            'Producto'
+        )
+        cantidad = int(detalle.get('cantidad') or 1)
+        precio_unitario = int(_valor_decimal(detalle.get('precio_unitario') or 0))
+        subtotal_item = int(_valor_decimal(
+            detalle.get('subtotal') or cantidad * precio_unitario
+        ))
+        items.append({
+            'nombre': nombre,
+            'cantidad': cantidad,
+            'precio_unitario': precio_unitario,
+            'subtotal': subtotal_item,
+        })
+
+    return {
+        'receptor_nombre': receptor_nombre,
+        'receptor_rut': receptor_rut,
+        'receptor_email': receptor_email,
+        'receptor_direccion': receptor_direccion,
+        'forma_pago': forma_pago,
+        'subtotal_productos': subtotal_productos,
+        'costo_envio': costo_envio,
+        'total': total,
+        'monto_neto': neto,
+        'monto_iva': iva,
+        'items': items,
+    }
+
+
 def generar_documento_mock_para_pedido(pedido):
     if not getattr(pedido, 'pk', None):
         raise ValueError('El pedido debe estar persistido.')
@@ -442,6 +518,7 @@ def generar_documento_mock_para_pedido(pedido):
             return documento_existente, False
 
         prefijo = 'BOL' if tipo_documento == 'BOLETA' else 'FAC'
+        datos_comprobante = _datos_comprobante_mock(pedido_bloqueado)
         documento = DocumentoTributario.objects.create(
             pedido=pedido_bloqueado,
             tipo_documento=tipo_documento,
@@ -453,6 +530,7 @@ def generar_documento_mock_para_pedido(pedido):
             provider_response={
                 'mode': 'mock',
                 'message': 'Documento tributario local de demostracion.',
+                'comprobante': datos_comprobante,
                 'academic_evidence': {
                     'libredte_real_ready': True,
                     'real_endpoint_tested': '/dte/documentos/emitir',
