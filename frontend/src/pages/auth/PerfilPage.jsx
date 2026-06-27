@@ -283,6 +283,8 @@ export default function PerfilPage() {
   const editable = true
 
   useEffect(() => {
+    if (!editando) return
+    if (regiones.length > 0) return
     let activo = true
     const cargarRegiones = async () => {
       setCargandoRegiones(true)
@@ -300,7 +302,7 @@ export default function PerfilPage() {
     }
     cargarRegiones()
     return () => { activo = false }
-  }, [])
+  }, [editando])
 
   useEffect(() => {
     if (!form.regionId) {
@@ -327,6 +329,20 @@ export default function PerfilPage() {
   }, [form.regionId])
 
   useEffect(() => {
+    // RutaProtegida garantiza que AuthContext ya completó su carga.
+    // Si el contexto tiene el perfil completo, lo usamos directamente
+    // para no emitir un GET /perfil/me/ redundante.
+    if (usuario?.datos !== undefined) {
+      const rolBackend = usuario.rol_backend || usuario.rol
+      const perfilNormalizado = { rol: rolBackend, datos: usuario.datos }
+      setPerfil(perfilNormalizado)
+      const iniciales = camposIniciales(usuario.datos, rolBackend)
+      setForm(iniciales)
+      setOriginal(iniciales)
+      setCargando(false)
+      return
+    }
+    // Fallback: sesión mínima desde token (sin datos completos)
     getPerfil()
       .then((res) => {
         const data = res?.data ?? res
@@ -341,6 +357,7 @@ export default function PerfilPage() {
       })
       .catch((err) => setErrorGeneral(mensajeErrorApi(err, 'No se pudieron cargar los datos del perfil.')))
       .finally(() => setCargando(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const setField = (campo, valor) => {
