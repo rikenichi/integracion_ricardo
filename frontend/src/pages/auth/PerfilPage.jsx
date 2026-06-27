@@ -153,20 +153,14 @@ function UbicacionCombobox({
 
       <div className="ubicacion-combobox__control">
         <input
-          {...(() => {
-            const props = getInputProps({ placeholder, disabled: disabled || loading })
-            // downshift emite aria-activedescendant='' cuando no hay ítem resaltado;
-            // el browser llama getElementById('') y emite un warning. Lo eliminamos.
-            if (!props['aria-activedescendant']) delete props['aria-activedescendant']
-            return props
-          })()}
+          {...limpiarAriaVacios(getInputProps({ placeholder, disabled: disabled || loading }))}
         />
 
         <button
           type="button"
           className="ubicacion-combobox__toggle"
           disabled={disabled || loading}
-          {...getToggleButtonProps()}
+          {...limpiarAriaVacios(getToggleButtonProps())}
           aria-label="Abrir opciones"
         >
           ▾
@@ -209,6 +203,22 @@ function UbicacionCombobox({
       </ul>
     </div>
   )
+}
+
+// downshift emite aria-activedescendant='' cuando no hay ítem resaltado.
+// El browser llama getElementById('') para resolver el atributo ARIA y emite un warning.
+// Esta función elimina cualquier atributo aria-* con valor vacío (string vacío, null o undefined).
+function limpiarAriaVacios(props) {
+  const resultado = { ...props }
+  for (const clave of Object.keys(resultado)) {
+    if (clave.startsWith('aria-')) {
+      const valor = resultado[clave]
+      if (valor === '' || valor === null || valor === undefined) {
+        delete resultado[clave]
+      }
+    }
+  }
+  return resultado
 }
 
 function obtenerListaRespuesta(data) {

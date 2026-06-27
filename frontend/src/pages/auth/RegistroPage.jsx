@@ -9,6 +9,19 @@ const TIPOS_CLIENTE = {
   institucional: 'INSTITUCIONAL',
 }
 
+function limpiarAriaVacios(props) {
+  const resultado = { ...props }
+  for (const clave of Object.keys(resultado)) {
+    if (clave.startsWith('aria-')) {
+      const valor = resultado[clave]
+      if (valor === '' || valor === null || valor === undefined) {
+        delete resultado[clave]
+      }
+    }
+  }
+  return resultado
+}
+
 function UbicacionCombobox({
                              label,
                              placeholder,
@@ -59,18 +72,14 @@ function UbicacionCombobox({
 
         <div className="ubicacion-combobox__control">
           <input
-              {...(() => {
-                const props = getInputProps({ placeholder, disabled: disabled || loading })
-                if (!props['aria-activedescendant']) delete props['aria-activedescendant']
-                return props
-              })()}
+              {...limpiarAriaVacios(getInputProps({ placeholder, disabled: disabled || loading }))}
           />
 
           <button
               type="button"
               className="ubicacion-combobox__toggle"
               disabled={disabled || loading}
-              {...getToggleButtonProps()}
+              {...limpiarAriaVacios(getToggleButtonProps())}
               aria-label="Abrir opciones"
           >
             ▾
