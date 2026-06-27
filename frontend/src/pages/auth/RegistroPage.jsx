@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useCombobox } from 'downshift'
 import { Link } from 'react-router-dom'
 import { registrarUsuario, obtenerComunasDespacho, obtenerRegionesDespacho } from '../../services/api'
@@ -66,8 +66,17 @@ function UbicacionCombobox({
     },
   })
 
+  const wrapperRef = useRef(null)
+
+  useLayoutEffect(() => {
+    if (!wrapperRef.current) return
+    wrapperRef.current.querySelectorAll('[aria-activedescendant=""]').forEach(el => {
+      el.removeAttribute('aria-activedescendant')
+    })
+  })
+
   return (
-      <div className="ubicacion-combobox">
+      <div className="ubicacion-combobox" ref={wrapperRef}>
         <label {...getLabelProps()}>{label}</label>
 
         <div className="ubicacion-combobox__control">

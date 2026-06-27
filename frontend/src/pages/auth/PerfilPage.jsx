@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCombobox } from 'downshift'
 import { useAuth } from '../../context/AuthContext'
@@ -122,6 +122,8 @@ function UbicacionCombobox({
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
 
+  const wrapperRef = useRef(null)
+
   const {
     isOpen,
     getLabelProps,
@@ -147,8 +149,18 @@ function UbicacionCombobox({
     },
   })
 
+  // useLayoutEffect runs synchronously after DOM mutations, before the browser paints.
+  // This removes aria-activedescendant="" (set by downshift when no item is highlighted)
+  // before the browser's accessibility engine has a chance to call getElementById('').
+  useLayoutEffect(() => {
+    if (!wrapperRef.current) return
+    wrapperRef.current.querySelectorAll('[aria-activedescendant=""]').forEach(el => {
+      el.removeAttribute('aria-activedescendant')
+    })
+  })
+
   return (
-    <div className="ubicacion-combobox">
+    <div className="ubicacion-combobox" ref={wrapperRef}>
       <label {...getLabelProps()}>{label}</label>
 
       <div className="ubicacion-combobox__control">
