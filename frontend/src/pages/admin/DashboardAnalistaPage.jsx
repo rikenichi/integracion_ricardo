@@ -240,7 +240,7 @@ export default function DashboardAnalistaPage() {
           <p className="dashboard-kicker">Analitica operacional</p>
           <h1 className="page-title">Dashboard analista</h1>
           <p className="text-muted">
-            Indicadores construidos con endpoints reales de pedidos, inventario y pagos disponibles.
+            Indicadores construidos con endpoints reales de pedidos, inventario y pagos registrados.
           </p>
         </div>
         <div className="dashboard-toolbar">
@@ -290,12 +290,14 @@ export default function DashboardAnalistaPage() {
 
           <section className="card dashboard-chart-card">
             <div className="dashboard-panel-header">
-              <h2>Ventas por mes</h2>
+              <h2>
+                {ventasPorMes.length === 1 ? 'Resumen de ventas del mes' : 'Ventas por mes'}
+              </h2>
               <p>Suma mensual calculada desde pedidos reales.</p>
             </div>
             {ventasPorMes.length === 0 ? (
               <p className="text-muted dashboard-empty">
-                No hay ventas suficientes para construir el gráfico mensual.
+                Sin ventas registradas.
               </p>
             ) : ventasPorMes.length === 1 ? (
               <div className="ventas-single">
@@ -363,7 +365,7 @@ export default function DashboardAnalistaPage() {
 
             <article className="card dashboard-panel">
               <div className="dashboard-panel-header">
-                <h2>Pagos disponibles</h2>
+                <h2>Pagos registrados</h2>
                 <p>Consulta real a pagos si el usuario tiene permisos.</p>
               </div>
               {errores.pagos ? (
