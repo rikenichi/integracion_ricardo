@@ -7,7 +7,7 @@ from .billing import (
     generar_documento_mock_para_pedido,
     validar_configuracion_libredte,
 )
-from .models import DocumentoTributario, EnvioPedido, Pedido
+from .models import DocumentoTributario, EnvioPedido, Pedido, PerfilTrabajador
 
 
 def _generar_ot_desde_admin(modeladmin, request, pedido):
@@ -69,6 +69,14 @@ def _generar_ot_desde_admin(modeladmin, request, pedido):
         ),
         level=messages.ERROR,
     )
+
+
+@admin.register(PerfilTrabajador)
+class PerfilTrabajadorAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'rut', 'cargo', 'area', 'activo', 'creado_en')
+    list_filter = ('activo', 'cargo', 'area')
+    search_fields = ('usuario__username', 'usuario__email', 'rut')
+    raw_id_fields = ('usuario',)
 
 
 @admin.register(Pedido)

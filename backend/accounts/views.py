@@ -25,6 +25,7 @@ from .models import (
     EnvioPedido,
     Pedido,
     PerfilCliente,
+    PerfilTrabajador,
 )
 
 
@@ -109,10 +110,9 @@ def perfil_usuario(usuario):
 
 
 def representar_trabajador(usuario):
-    perfil = getattr(usuario, 'perfil_cliente', None)
+    perfil = getattr(usuario, 'perfil_trabajador', None)
     grupos = list(usuario.groups.values_list('name', flat=True))
-    # cargo: no existe PerfilTrabajador aún; se deriva del primer grupo como aproximación
-    cargo = grupos[0] if grupos else ''
+    cargo = (perfil.cargo if perfil and perfil.cargo else None) or (grupos[0] if grupos else '')
     return {
         'id': usuario.id,
         'usuario': {
@@ -124,10 +124,11 @@ def representar_trabajador(usuario):
             'is_staff': usuario.is_staff,
             'grupos': grupos,
         },
-        'rut': perfil.rut if perfil else '',       # vacío sin PerfilTrabajador
-        'telefono': perfil.telefono if perfil else '',  # vacío sin PerfilTrabajador
+        'rut': perfil.rut if perfil else '',
+        'telefono': perfil.telefono if perfil else '',
         'cargo': cargo,
-        'activo': usuario.is_active,
+        'area': perfil.area if perfil else '',
+        'activo': perfil.activo if perfil is not None else usuario.is_active,
     }
 
 
@@ -315,8 +316,14 @@ class TrabajadorListView(APIView):
 
         trabajadores = (
             User.objects
-            .filter(Q(is_staff=True) | Q(is_superuser=True) | Q(groups__isnull=False))
-            .prefetch_related('groups', 'perfil_cliente')
+            .filter(
+                Q(is_staff=True)
+                | Q(is_superuser=True)
+                | Q(groups__isnull=False)
+                | Q(perfil_trabajador__isnull=False)
+            )
+            .select_related('perfil_trabajador')
+            .prefetch_related('groups')
             .distinct()
             .order_by('id')
         )
