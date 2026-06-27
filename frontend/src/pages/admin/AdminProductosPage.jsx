@@ -28,6 +28,8 @@ const FORM_INICIAL = {
   peso_mg: '',
   volumen_ml: '',
   registro_sanitario: '',
+  imagen_url: '',
+  requiere_receta: false,
   requiere_control_vencimiento: true,
   activo: true,
   es_caja: false,
@@ -215,7 +217,9 @@ export default function AdminProductosPage() {
 
     if (esModoStock) {
       if (!form.categoria_ids.length) errores.categoria_ids = 'Selecciona al menos una categoria.'
-      if (!form.codigo_lote.trim()) errores.codigo_lote = 'El codigo de lote es obligatorio.'
+      if (form.requiere_control_vencimiento && !form.codigo_lote.trim()) {
+        errores.codigo_lote = 'El codigo de lote es obligatorio cuando se controla vencimiento.'
+      }
       if (!form.sucursal_id || Number(form.sucursal_id) <= 0) {
         errores.sucursal_id = 'La sucursal es obligatoria y debe existir.'
       }
@@ -254,6 +258,8 @@ export default function AdminProductosPage() {
     volumen_ml: numeroOpcional(form.volumen_ml),
     requiere_control_vencimiento: Boolean(form.requiere_control_vencimiento),
     registro_sanitario: form.registro_sanitario.trim(),
+    imagen_url: form.imagen_url.trim(),
+    requiere_receta: Boolean(form.requiere_receta),
     activo: Boolean(form.activo),
     es_caja: Boolean(form.es_caja),
   })
@@ -273,6 +279,8 @@ export default function AdminProductosPage() {
       volumen_ml: numeroOpcional(form.volumen_ml),
       requiere_control_vencimiento: Boolean(form.requiere_control_vencimiento),
       registro_sanitario: form.registro_sanitario.trim(),
+      imagen_url: form.imagen_url.trim(),
+      requiere_receta: Boolean(form.requiere_receta),
       es_caja: Boolean(form.es_caja),
       codigo_lote: form.codigo_lote.trim(),
       fecha_elaboracion: form.fecha_elaboracion || null,
@@ -468,9 +476,22 @@ export default function AdminProductosPage() {
             </label>
             <label>
               Registro sanitario
-              <input value={form.registro_sanitario} onChange={(e) => setCampo('registro_sanitario', e.target.value)} />
+              <input value={form.registro_sanitario} onChange={(e) => setCampo('registro_sanitario', e.target.value)} placeholder="ISP-XXXX-XXXX" />
+            </label>
+            <label className="admin-productos-form-wide">
+              URL imagen
+              <input
+                type="url"
+                value={form.imagen_url}
+                onChange={(e) => setCampo('imagen_url', e.target.value)}
+                placeholder="https://..."
+              />
             </label>
             <div className="admin-productos-checks">
+              <label>
+                <input type="checkbox" checked={form.requiere_receta} onChange={(e) => setCampo('requiere_receta', e.target.checked)} />
+                Requiere receta medica
+              </label>
               <label>
                 <input type="checkbox" checked={form.requiere_control_vencimiento} onChange={(e) => setCampo('requiere_control_vencimiento', e.target.checked)} />
                 Control vencimiento
@@ -487,24 +508,28 @@ export default function AdminProductosPage() {
 
             {esModoStock && (
               <>
-                <div className="admin-productos-subheader">
-                  <h3>Datos del lote</h3>
-                  <p>Si el lote ya existe para el SKU, el backend puede recuperarlo y sumar stock.</p>
-                </div>
-                <label>
-                  Codigo lote *
-                  <input value={form.codigo_lote} onChange={(e) => setCampo('codigo_lote', e.target.value)} placeholder="L001" />
-                  {erroresForm.codigo_lote && <small>{erroresForm.codigo_lote}</small>}
-                </label>
-                <label>
-                  Fecha elaboracion
-                  <input type="date" value={form.fecha_elaboracion} onChange={(e) => setCampo('fecha_elaboracion', e.target.value)} />
-                </label>
-                <label>
-                  Fecha vencimiento
-                  <input type="date" value={form.fecha_vencimiento} onChange={(e) => setCampo('fecha_vencimiento', e.target.value)} />
-                  {erroresForm.fecha_vencimiento && <small>{erroresForm.fecha_vencimiento}</small>}
-                </label>
+                {form.requiere_control_vencimiento && (
+                  <>
+                    <div className="admin-productos-subheader">
+                      <h3>Datos del lote</h3>
+                      <p>Si el lote ya existe para el SKU, el backend puede recuperarlo y sumar stock.</p>
+                    </div>
+                    <label>
+                      Codigo lote *
+                      <input value={form.codigo_lote} onChange={(e) => setCampo('codigo_lote', e.target.value)} placeholder="L-2025-001" />
+                      {erroresForm.codigo_lote && <small>{erroresForm.codigo_lote}</small>}
+                    </label>
+                    <label>
+                      Fecha elaboracion
+                      <input type="date" value={form.fecha_elaboracion} onChange={(e) => setCampo('fecha_elaboracion', e.target.value)} />
+                    </label>
+                    <label>
+                      Fecha vencimiento
+                      <input type="date" value={form.fecha_vencimiento} onChange={(e) => setCampo('fecha_vencimiento', e.target.value)} />
+                      {erroresForm.fecha_vencimiento && <small>{erroresForm.fecha_vencimiento}</small>}
+                    </label>
+                  </>
+                )}
 
                 <div className="admin-productos-subheader">
                   <h3>Datos de inventario</h3>
