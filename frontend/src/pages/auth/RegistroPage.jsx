@@ -59,10 +59,11 @@ function UbicacionCombobox({
 
         <div className="ubicacion-combobox__control">
           <input
-              {...getInputProps({
-                placeholder,
-                disabled: disabled || loading,
-              })}
+              {...(() => {
+                const props = getInputProps({ placeholder, disabled: disabled || loading })
+                if (!props['aria-activedescendant']) delete props['aria-activedescendant']
+                return props
+              })()}
           />
 
           <button
