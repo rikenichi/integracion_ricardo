@@ -271,6 +271,7 @@ export default function RegistroPage() {
   const [cargandoComunas, setCargandoComunas] = useState(false)
   const [mostrarPassword, setMostrarPassword] = useState(false)
   const [mostrarConfirmPassword, setMostrarConfirmPassword] = useState(false)
+  const [tipoRegistrado, setTipoRegistrado] = useState('')
 
   const esInstitucional = form.tipoCliente === TIPOS_CLIENTE.institucional
 
@@ -475,6 +476,7 @@ export default function RegistroPage() {
     try {
       setEnviando(true)
       await registrarUsuario(payload)
+      setTipoRegistrado(form.tipoCliente)
       setEnviado(true)
       setForm(FORM_INICIAL)
 
@@ -518,7 +520,15 @@ export default function RegistroPage() {
 
         {enviado && (
           <div className="alert alert-success">
-            Cuenta creada correctamente. Ya puedes iniciar sesión.
+            {tipoRegistrado === TIPOS_CLIENTE.institucional ? (
+              <>
+                <strong>Cuenta institucional creada.</strong> Ya puedes iniciar sesión.
+                Las compras realizadas como cliente institucional quedan registradas para
+                revisión comercial y generación de convenios B2B.
+              </>
+            ) : (
+              'Cuenta creada correctamente. Ya puedes iniciar sesión.'
+            )}
           </div>
         )}
 
@@ -589,7 +599,7 @@ export default function RegistroPage() {
               {renderError('telefono')}
             </div>
             <div className="form-group">
-              <label>RUT {esInstitucional ? '*' : ''}</label>
+              <label>RUT{esInstitucional ? ' representante' : ''} *</label>
               <input
                 value={form.rut}
                 onChange={e => actualizarCampo('rut', e.target.value)}
