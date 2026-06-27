@@ -147,6 +147,99 @@ class ProductoAdminListView(StaffOnlyMixin, APIView):
         serializer = ProductoSerializer(productos, many=True)
         return Response(serializer.data)
 
+    def post(self, request):
+        permiso = self.validar_staff(request)
+        if permiso is not None:
+            return permiso
+
+        data = request.data
+
+        # --- campos obligatorios ---
+        codigo = str(data.get('sku') or data.get('codigo') or '').strip()
+        if not codigo:
+            return Response(
+                {'error': 'El campo SKU/código es obligatorio.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        nombre = str(data.get('nombre') or '').strip()
+        if not nombre:
+            return Response(
+                {'error': 'El campo nombre es obligatorio.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        precio_raw = data.get('valor_unitario') or data.get('precio') or data.get('precio_b2c') or 0
+        try:
+            precio = int(precio_raw)
+            if precio < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response(
+                {'error': 'El valor unitario debe ser un número mayor o igual a 0.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # --- SKU duplicado ---
+        if Producto.objects.filter(Q(codigo=codigo) | Q(sku=codigo)).exists():
+            return Response(
+                {'error': f'Ya existe un producto con el SKU/código "{codigo}".'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # --- marca: resolver nombre desde índice 1-based ---
+        marca_nombre = ''
+        marca_id_raw = data.get('marca_id')
+        if marca_id_raw:
+            try:
+                idx = int(marca_id_raw) - 1
+                nombres_marcas = list(
+                    Producto.objects
+                    .exclude(marca_nombre='')
+                    .values_list('marca_nombre', flat=True)
+                    .distinct()
+                    .order_by('marca_nombre')
+                )
+                if 0 <= idx < len(nombres_marcas):
+                    marca_nombre = nombres_marcas[idx]
+            except (TypeError, ValueError):
+                pass
+
+        # --- categoría: usar el nombre de la primera categoría seleccionada ---
+        categoria_nombre = ''
+        categoria_ids_raw = data.get('categoria_ids') or []
+        if categoria_ids_raw:
+            try:
+                idx = int(categoria_ids_raw[0]) - 1
+                nombres_cats = list(
+                    Producto.objects
+                    .exclude(categoria_nombre='')
+                    .values_list('categoria_nombre', flat=True)
+                    .distinct()
+                    .order_by('categoria_nombre')
+                )
+                if 0 <= idx < len(nombres_cats):
+                    categoria_nombre = nombres_cats[idx]
+            except (TypeError, ValueError):
+                pass
+
+        producto = Producto.objects.create(
+            codigo=codigo,
+            sku=codigo,
+            nombre=nombre,
+            descripcion=str(data.get('descripcion') or '').strip(),
+            precio_b2c=precio,
+            precio_b2b=precio,
+            marca_nombre=marca_nombre,
+            categoria_nombre=categoria_nombre,
+            imagen_url=str(data.get('imagen_url') or '').strip(),
+            requiere_receta=bool(data.get('requiere_receta', False)),
+            activo=bool(data.get('activo', True)),
+        )
+
+        serializer = ProductoSerializer(producto)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 class CategoriaAdminListView(StaffOnlyMixin, APIView):
     def get(self, request):
