@@ -19,6 +19,7 @@ from transbank.common.options import WebpayOptions
 from transbank.webpay.webpay_plus.transaction import Transaction
 
 from inventory.models import Producto
+from .billing import generar_documento_mock_para_pedido
 from .models import (
     DireccionEntrega,
     DocumentoTributario,
@@ -949,3 +950,52 @@ class DocumentoTributarioDetalleView(APIView):
             'detalles': detalles_api,
         }
         return Response(data)
+
+
+class GenerarDteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        pedido_id = request.data.get('pedido_id')
+        if not pedido_id:
+            return Response({'detail': 'pedido_id requerido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            pedido = Pedido.objects.select_related('usuario').get(pk=pedido_id)
+        except Pedido.DoesNotExist:
+            return Response({'detail': 'Pedido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if pedido.usuario_id != request.user.id and not (request.user.is_staff or request.user.is_superuser):
+            return Response({'detail': 'Pedido no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if pedido.estado != 'CONFIRMADO':
+            return Response(
+                {'detail': f'El pedido debe estar en estado CONFIRMADO (estado actual: {pedido.estado}).'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            documento, creado = generar_documento_mock_para_pedido(pedido)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        comprobante = (documento.provider_response or {}).get('comprobante', {})
+        monto_total = int(documento.monto_total or 0)
+        monto_neto = int(comprobante.get('monto_neto') or round(monto_total / 1.19))
+        monto_iva = monto_total - monto_neto
+
+        return Response({
+            'id': documento.id,
+            'pedido': pedido.id,
+            'tipo_documento': documento.tipo_documento,
+            'tipo_documento_nombre': documento.get_tipo_documento_display(),
+            'proveedor': documento.proveedor,
+            'folio': documento.folio,
+            'estado': documento.estado,
+            'estado_dte': documento.get_estado_display(),
+            'fecha_emision': documento.fecha_emision,
+            'monto_total': monto_total,
+            'monto_neto': monto_neto,
+            'monto_iva': monto_iva,
+            'creado': creado,
+        }, status=status.HTTP_201_CREATED if creado else status.HTTP_200_OK)

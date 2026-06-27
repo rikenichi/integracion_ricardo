@@ -24,6 +24,12 @@ export default function ComprobanteDtePage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    if (!id || !/^\d+$/.test(String(id))) {
+      setError('Identificador de comprobante no válido. Accede al comprobante desde el detalle del pedido.')
+      setLoading(false)
+      return
+    }
+
     const cargarDocumento = async () => {
       setLoading(true)
       setError('')

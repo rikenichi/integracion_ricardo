@@ -649,15 +649,7 @@ export const obtenerDocumentosTributarios = () => respuestaDemo([])
 export const obtenerDocumentoTributarioDetalle = (id) =>
   api.get(`/payments/dte/${id}/`)
 export const generarDteDesdePedido = (pedidoId) =>
-  respuestaDemo({
-    id: `demo-${pedidoId}`,
-    pedido: pedidoId,
-    tipo_documento_nombre: 'DTE demo',
-    folio: `DEMO-${pedidoId}`,
-    fecha_emision: new Date().toISOString(),
-    estado_dte: 'GENERADO_DEMO',
-    monto_total: 0,
-  })
+  api.post('/payments/dte/generar/', { pedido_id: pedidoId })
 
 // --- WebPay Plus (Transbank, ambiente TEST) ---
 export const iniciarWebpay = (pedidoId) => {
