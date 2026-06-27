@@ -644,8 +644,8 @@ export const actualizarConciliacionPago = (id, datos) => {
   return respuestaDemo({ id, ...datos, actualizado_en: new Date().toISOString() })
 }
 
-// --- DTE simulado ---
-export const obtenerDocumentosTributarios = () => respuestaDemo([])
+// --- DTE ---
+export const obtenerDocumentosTributarios = () => api.get('/payments/dte/')
 export const obtenerDocumentoTributarioDetalle = (id) =>
   api.get(`/payments/dte/${id}/`)
 export const generarDteDesdePedido = (pedidoId) =>

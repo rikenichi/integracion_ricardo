@@ -999,3 +999,44 @@ class GenerarDteView(APIView):
             'monto_iva': monto_iva,
             'creado': creado,
         }, status=status.HTTP_201_CREATED if creado else status.HTTP_200_OK)
+
+
+class DocumentoTributarioListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not (request.user.is_staff or request.user.is_superuser):
+            return Response(
+                {'detail': 'No tienes permiso para listar documentos tributarios.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        documentos = (
+            DocumentoTributario.objects
+            .select_related('pedido__usuario')
+            .order_by('-creado_en')
+        )
+
+        data = []
+        for doc in documentos:
+            pedido = doc.pedido
+            comprobante = (doc.provider_response or {}).get('comprobante', {})
+            data.append({
+                'id': doc.id,
+                'pedido': pedido.id,
+                'pedido_id': pedido.id,
+                'tipo_documento': doc.tipo_documento,
+                'tipo_documento_nombre': doc.get_tipo_documento_display(),
+                'proveedor': doc.proveedor,
+                'folio': doc.folio,
+                'estado': doc.estado,
+                'estado_dte': doc.get_estado_display(),
+                'fecha_emision': doc.fecha_emision,
+                'creado_en': doc.creado_en,
+                'monto_total': int(doc.monto_total or 0),
+                'receptor_nombre': comprobante.get('receptor_nombre', ''),
+                'receptor_email': comprobante.get('receptor_email', pedido.usuario.email),
+                'url_pdf': doc.url_pdf or None,
+            })
+
+        return Response(data)

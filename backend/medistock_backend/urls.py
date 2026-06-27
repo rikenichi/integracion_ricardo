@@ -6,6 +6,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from accounts.views import (
     DireccionEntregaView,
     DocumentoTributarioDetalleView,
+    DocumentoTributarioListView,
     GenerarDteView,
     LogoutView,
     MisPagosView,
@@ -74,6 +75,7 @@ urlpatterns = [
     path('api/payments/webpay/iniciar/', WebpayIniciarView.as_view(), name='webpay-iniciar'),
     path('api/payments/webpay/commit/', WebpayCommitView.as_view(), name='webpay-commit'),
     path('api/payments/webpay/estado/<str:token_ws>/', WebpayEstadoView.as_view(), name='webpay-estado'),
+    path('api/payments/dte/', DocumentoTributarioListView.as_view(), name='payments-dte-list'),
     path('api/payments/dte/generar/', GenerarDteView.as_view(), name='payments-dte-generar'),
     path('api/payments/dte/<int:doc_id>/', DocumentoTributarioDetalleView.as_view(), name='payments-dte-detalle'),
 ]
