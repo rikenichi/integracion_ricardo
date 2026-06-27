@@ -294,7 +294,16 @@ export default function PedidoDetallePage() {
           <h2>Resumen financiero</h2>
           <div className="pedido-totales">
             <p><span>Subtotal productos</span><strong>{formatPrecio(pedido.subtotal)}</strong></p>
-            <p className="muted-total"><span>Descuento B2B</span><strong>{formatPrecio(pedido.descuento)}</strong></p>
+            {pedido.descuento > 0 && (() => {
+              const pct = pedido.descuento
+              const montoDescontado = Math.round(pedido.subtotal * pct / 100)
+              return (
+                <p className="muted-total">
+                  <span>Descuento B2B ({pct}%)</span>
+                  <strong>-{formatPrecio(montoDescontado)}</strong>
+                </p>
+              )
+            })()}
             <p>
               <span>
                 Envío
