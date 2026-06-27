@@ -96,7 +96,9 @@ export default function ProductoDetallePage() {
             <div className="precio-container">
               <span className="precio-label">{esB2B ? 'Precio B2B' : 'Precio'}</span>
               <span className="precio-valor">{formatPrecio(precio)}</span>
-              {esB2B && <span className="text-muted" style={{fontSize:'0.8rem'}}>con 10% descuento al facturar</span>}
+              {esB2B && producto.tiene_convenio && producto.descuento_porcentaje > 0 && (
+                <span className="text-muted" style={{fontSize:'0.8rem'}}>{producto.descuento_porcentaje}% descuento convenio</span>
+              )}
             </div>
 
             <p className="text-muted" style={{fontSize:'0.85rem'}}>

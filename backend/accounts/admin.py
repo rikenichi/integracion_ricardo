@@ -7,7 +7,7 @@ from .billing import (
     generar_documento_mock_para_pedido,
     validar_configuracion_libredte,
 )
-from .models import DocumentoTributario, EnvioPedido, Pedido, PerfilTrabajador
+from .models import ConvenioB2B, DocumentoTributario, EnvioPedido, Pedido, PerfilCliente, PerfilTrabajador
 
 
 def _generar_ot_desde_admin(modeladmin, request, pedido):
@@ -69,6 +69,22 @@ def _generar_ot_desde_admin(modeladmin, request, pedido):
         ),
         level=messages.ERROR,
     )
+
+
+@admin.register(PerfilCliente)
+class PerfilClienteAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'tipo_cliente', 'rut', 'telefono', 'creado_en')
+    list_filter = ('tipo_cliente',)
+    search_fields = ('usuario__username', 'usuario__email', 'rut')
+    raw_id_fields = ('usuario',)
+
+
+@admin.register(ConvenioB2B)
+class ConvenioB2BAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'perfil', 'porcentaje_descuento', 'activo', 'fecha_inicio', 'fecha_fin', 'creado_en')
+    list_filter = ('activo',)
+    search_fields = ('nombre', 'perfil__usuario__username', 'perfil__usuario__email')
+    raw_id_fields = ('perfil',)
 
 
 @admin.register(PerfilTrabajador)

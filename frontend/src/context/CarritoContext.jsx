@@ -101,20 +101,18 @@ export function CarritoProvider({ children }) {
       return acc + parseFloat(precio || 0) * i.cantidad
     }, 0)
 
-  /**
-   * Desglose tributario a partir del subtotal con IVA.
-   *
-   * - subtotal:      suma de precios con IVA incluido.
-   * - descuento:     10% institucional, opcional.
-   * - baseAfectaIva: subtotal menos descuento.
-   * - neto:          baseAfectaIva / 1.19.
-   * - iva:           baseAfectaIva menos neto.
-   * - total:         baseAfectaIva sin incluir despacho.
-   */
+  // Subtotal a precio_b2c (sin descuento), para calcular el descuento real.
+  const calcularTotalB2C = () =>
+    items.reduce((acc, i) => {
+      const precio = obtenerPrecioProducto(i.producto, false)
+      return acc + parseFloat(precio || 0) * i.cantidad
+    }, 0)
+
   const calcularResumen = ({ esB2B = false } = {}) => {
     const subtotal = calcularTotal(esB2B)
-    const descuento = esB2B ? Math.round(subtotal * 0.10) : 0
-    const baseAfectaIva = subtotal - descuento
+    // Descuento real: diferencia entre precio sin descuento y precio con convenio.
+    const descuento = esB2B ? Math.max(0, Math.round(calcularTotalB2C() - subtotal)) : 0
+    const baseAfectaIva = subtotal - (esB2B ? 0 : 0)
     const neto = Math.round(baseAfectaIva / (1 + IVA))
     const iva = baseAfectaIva - neto
     const total = baseAfectaIva

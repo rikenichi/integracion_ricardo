@@ -211,9 +211,9 @@ export default function CatalogoPage() {
                 <div className="producto-footer">
                   <div className="producto-precio">
                     {formatPrecio(obtenerPrecioProducto(p, esB2B))}
-                    {esB2B && (
+                    {esB2B && p.tiene_convenio && p.descuento_porcentaje > 0 && (
                       <span className="text-muted" style={{fontSize:'0.75rem', display:'block'}}>
-                        + 10% descuento institucional
+                        {p.descuento_porcentaje}% descuento convenio
                       </span>
                     )}
                   </div>
