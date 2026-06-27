@@ -97,6 +97,7 @@ def perfil_usuario(usuario):
                 'first_name': usuario.first_name,
                 'last_name': usuario.last_name,
                 'is_staff': es_administrador,
+                'grupos': list(usuario.groups.values_list('name', flat=True)),
             },
             'rut': perfil.rut if perfil else '',
             'telefono': perfil.telefono if perfil else '',
@@ -108,19 +109,23 @@ def perfil_usuario(usuario):
 
 
 def representar_trabajador(usuario):
+    perfil = getattr(usuario, 'perfil_cliente', None)
+    grupos = list(usuario.groups.values_list('name', flat=True))
     return {
         'id': usuario.id,
-        'username': usuario.username,
-        'email': usuario.email,
-        'first_name': usuario.first_name,
-        'last_name': usuario.last_name,
-        'nombre_completo': usuario.get_full_name() or usuario.username,
-        'rol': 'ADMINISTRADOR',
-        'is_staff': usuario.is_staff,
-        'is_superuser': usuario.is_superuser,
-        'is_active': usuario.is_active,
-        'fecha_registro': usuario.date_joined,
-        'date_joined': usuario.date_joined,
+        'usuario': {
+            'id': usuario.id,
+            'username': usuario.username,
+            'email': usuario.email,
+            'first_name': usuario.first_name,
+            'last_name': usuario.last_name,
+            'is_staff': usuario.is_staff,
+            'grupos': grupos,
+        },
+        'rut': perfil.rut if perfil else '',
+        'telefono': perfil.telefono if perfil else '',
+        'cargo': '',
+        'activo': usuario.is_active,
     }
 
 
@@ -306,9 +311,13 @@ class TrabajadorListView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        trabajadores = User.objects.filter(
-            Q(is_staff=True) | Q(is_superuser=True)
-        ).order_by('id')
+        trabajadores = (
+            User.objects
+            .filter(Q(is_staff=True) | Q(is_superuser=True) | Q(groups__isnull=False))
+            .prefetch_related('groups', 'perfil_cliente')
+            .distinct()
+            .order_by('id')
+        )
         return Response([
             representar_trabajador(usuario)
             for usuario in trabajadores
