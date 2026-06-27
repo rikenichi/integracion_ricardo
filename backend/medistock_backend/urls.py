@@ -27,6 +27,7 @@ from inventory.views import (
     MovimientoInventarioListView,
     ProductoAdminListView,
     ProductoDetalleView,
+    TrasladoListView,
 )
 from locations.views import (
     ComunaListView,
@@ -53,6 +54,7 @@ urlpatterns = [
     path('api/inventory/inventarios/', InventarioListView.as_view(), name='inventory-inventarios'),
     path('api/inventory/lotes/', LoteListView.as_view(), name='inventory-lotes'),
     path('api/inventory/movimientos/', MovimientoInventarioListView.as_view(), name='inventory-movimientos'),
+    path('api/inventory/traslados/', TrasladoListView.as_view(), name='inventory-traslados'),
     path('api/locations/regions/', RegionListView.as_view(), name='locations-regions'),
     path('api/locations/comunas/', ComunaListView.as_view(), name='locations-comunas'),
     path('api/locations/sucursales/<int:sucursal_id>/', SucursalDetailView.as_view(), name='locations-sucursal'),

@@ -202,3 +202,11 @@ class MovimientoInventarioListView(StaffOnlyMixin, APIView):
         if permiso is not None:
             return permiso
         return Response([])
+
+
+class TrasladoListView(StaffOnlyMixin, APIView):
+    def get(self, request):
+        permiso = self.validar_staff(request)
+        if permiso is not None:
+            return permiso
+        return Response([])
