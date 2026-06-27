@@ -1034,9 +1034,11 @@ class DocumentoTributarioListView(APIView):
                 'fecha_emision': doc.fecha_emision,
                 'creado_en': doc.creado_en,
                 'monto_total': int(doc.monto_total or 0),
+                'total': int(doc.monto_total or 0),
                 'receptor_nombre': comprobante.get('receptor_nombre', ''),
                 'receptor_email': comprobante.get('receptor_email', pedido.usuario.email),
                 'url_pdf': doc.url_pdf or None,
+                'pdf_url': doc.url_pdf or None,
             })
 
         return Response(data)
