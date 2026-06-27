@@ -312,9 +312,23 @@ export default function ResultadoPagoPage() {
                 <p><strong>Email confirmación:</strong> pagos@medistock.cl</p>
               </div>
             )}
+
+            <button
+              className="btn btn-secondary btn-block btn-lg mt-2"
+              onClick={handlePagoSimulado}
+              disabled={procesando}
+            >
+              {procesando
+                ? 'Procesando...'
+                : `Pagar (simulado) ${formatPrecio(totalConEnvio)}`
+              }
+            </button>
+            <p className="text-muted mt-1" style={{fontSize:'0.72rem', textAlign:'center'}}>
+              🔒 MEDISTOCK Secure Gateway — pago simulado para demo
+            </p>
           </div>
 
-          {/* ── Columna derecha: resumen + botón pago simulado ── */}
+          {/* ── Columna derecha: resumen del pedido ── */}
           <div className="card">
             <h3 className="section-title">Resumen del pedido</h3>
             <div className="resumen-item">
@@ -358,21 +372,6 @@ export default function ResultadoPagoPage() {
             <div className="resumen-item resumen-total">
               <span>Total a pagar</span><span>{formatPrecio(totalConEnvio)}</span>
             </div>
-
-            {/* Este botón solo ejecuta el flujo simulado */}
-            <button
-              className="btn btn-secondary btn-block btn-lg mt-2"
-              onClick={handlePagoSimulado}
-              disabled={procesando}
-            >
-              {procesando
-                ? 'Procesando...'
-                : `Pagar (simulado) ${formatPrecio(totalConEnvio)}`
-              }
-            </button>
-            <p className="text-muted mt-1" style={{fontSize:'0.72rem', textAlign:'center'}}>
-              🔒 MEDISTOCK Secure Gateway — pago simulado para demo
-            </p>
           </div>
 
         </div>
