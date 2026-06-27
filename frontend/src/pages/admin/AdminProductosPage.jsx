@@ -314,7 +314,7 @@ export default function AdminProductosPage() {
     try {
       if (esModoStock) {
         await ingresarProductoInventario(construirPayloadIngreso())
-        setExito('Producto ingresado correctamente con lote, inventario y movimiento de entrada.')
+        setExito('Producto ingresado correctamente con stock inicial.')
       } else {
         await crearProducto(construirPayloadSimple())
         setExito('Producto creado correctamente. Si no tiene stock, aparecera como sin stock en catalogo.')
