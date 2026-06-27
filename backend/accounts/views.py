@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponseRedirect
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -103,6 +104,23 @@ def perfil_usuario(usuario):
             'datos_institucion': perfil.datos_institucion if perfil else None,
             'direccion_principal': representar_direccion(direccion_principal),
         },
+    }
+
+
+def representar_trabajador(usuario):
+    return {
+        'id': usuario.id,
+        'username': usuario.username,
+        'email': usuario.email,
+        'first_name': usuario.first_name,
+        'last_name': usuario.last_name,
+        'nombre_completo': usuario.get_full_name() or usuario.username,
+        'rol': 'ADMINISTRADOR',
+        'is_staff': usuario.is_staff,
+        'is_superuser': usuario.is_superuser,
+        'is_active': usuario.is_active,
+        'fecha_registro': usuario.date_joined,
+        'date_joined': usuario.date_joined,
     }
 
 
@@ -276,6 +294,25 @@ class PerfilView(APIView):
             )
 
         return Response(perfil_usuario(usuario))
+
+
+class TrabajadorListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not (request.user.is_staff or request.user.is_superuser):
+            return Response(
+                {'detail': 'No tienes permiso para listar trabajadores.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        trabajadores = User.objects.filter(
+            Q(is_staff=True) | Q(is_superuser=True)
+        ).order_by('id')
+        return Response([
+            representar_trabajador(usuario)
+            for usuario in trabajadores
+        ])
 
 
 class DireccionEntregaView(APIView):
