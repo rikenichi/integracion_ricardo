@@ -296,9 +296,16 @@ export default function PanelPage() {
             }),
       ])
 
+      // DTEs embebidos en pedidos — se usan como semilla para documentosPorPedido
+      // aunque el endpoint DTE falle o aún no haya cargado.
+      let dtesFromPedidos = []
+
       if (pedR.status === 'fulfilled') {
         const listaPedidos = extraerLista(pedR.value.data).map(normalizarPedido)
         setPedidos(listaPedidos)
+        dtesFromPedidos = listaPedidos
+          .filter(p => p.dte_info?.id)
+          .map(p => normalizarDocumentoTributario(p.dte_info))
       }
 
       if (pagR.status === 'fulfilled') {
@@ -313,7 +320,17 @@ export default function PanelPage() {
 
       if (dteR.status === 'fulfilled') {
         const listaDte = extraerLista(dteR.value.data).map(normalizarDocumentoTributario)
-        setDocumentosTributarios(listaDte)
+        // Merge: preferir datos del endpoint DTE (más completos), rellenar con semilla de pedidos
+        const idsDte = new Set(listaDte.map(d => d.id))
+        const semilla = dtesFromPedidos.filter(d => !idsDte.has(d.id))
+        setDocumentosTributarios([...listaDte, ...semilla])
+      } else if (dtesFromPedidos.length > 0) {
+        // Si el endpoint DTE falló (ej. cliente sin permiso), usar solo la semilla
+        setDocumentosTributarios(prev => {
+          const idsExistentes = new Set(prev.map(d => d.id))
+          const nuevos = dtesFromPedidos.filter(d => !idsExistentes.has(d.id))
+          return nuevos.length > 0 ? [...prev, ...nuevos] : prev
+        })
       }
 
       if (invR.status === 'fulfilled') {
