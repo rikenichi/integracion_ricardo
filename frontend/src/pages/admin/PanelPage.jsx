@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   aprobarPedido,
-  getDespachos,
   getPagos,
   getMisPedidos,
   getPedidosTodos,
@@ -74,6 +73,30 @@ function normalizarPago(p) {
         p.transaction_date ||
         p.fecha_creacion,
   }
+}
+
+function normalizarDespachoDesde(p) {
+  const envio = p.envio || {}
+  const despachoJson = p.despacho || {}
+  const datos = p.datos || {}
+  return normalizarDespacho({
+    id: `ped-${p.id}`,
+    pedido: p.id,
+    pedido_id: p.id,
+    numero_tracking: envio.numero_tracking || envio.tracking || '-',
+    courier: envio.courier || despachoJson.courier || despachoJson.transportista || datos.courier || '-',
+    servicio: envio.servicio || despachoJson.servicio || datos.servicio || '-',
+    estado: envio.estado || p.estado || '-',
+    estado_despacho: envio.estado || '-',
+    usuario_email: p.usuario_email || p.email || '-',
+    usuario_nombre: p.usuario_nombre || p.nombre || '-',
+    costo_envio: p.costo_envio ?? despachoJson.costo_envio ?? datos.costo_envio ?? null,
+    direccion: datos.direccion_entrega || datos.direccion || despachoJson.direccion || '-',
+    comuna: datos.comuna_nombre || despachoJson.comuna || '-',
+    region: datos.region_nombre || despachoJson.region || '-',
+    fecha_estimada_entrega: datos.fecha_requerida_entrega || despachoJson.fecha_estimada || null,
+    creado_en: p.creado_en,
+  })
 }
 
 function normalizarDespacho(d) {
@@ -280,10 +303,9 @@ export default function PanelPage() {
     try {
       const pedidosPromise = esCliente ? getMisPedidos() : getPedidosTodos()
 
-      const [pedR, pagR, desR, dteR, invR] = await Promise.allSettled([
+      const [pedR, pagR, dteR, invR] = await Promise.allSettled([
         pedidosPromise,
         getPagos(),
-        getDespachos(),
         puedeVerDte ? obtenerDocumentosTributarios() : Promise.resolve({ data: [] }),
         puedeVerInventario
             ? obtenerResumenInventario()
@@ -296,26 +318,29 @@ export default function PanelPage() {
             }),
       ])
 
-      // DTEs embebidos en pedidos — se usan como semilla para documentosPorPedido
-      // aunque el endpoint DTE falle o aún no haya cargado.
+      // DTEs y despachos embebidos en pedidos.
       let dtesFromPedidos = []
 
       if (pedR.status === 'fulfilled') {
         const listaPedidos = extraerLista(pedR.value.data).map(normalizarPedido)
         setPedidos(listaPedidos)
+
         dtesFromPedidos = listaPedidos
           .filter(p => p.dte_info?.id)
           .map(p => normalizarDocumentoTributario(p.dte_info))
+
+        // Derivar despachos desde pedidos: incluir pedidos con EnvioPedido (envio ≠ null)
+        // o que estén CONFIRMADOS (al menos tienen despacho iniciado por Webpay commit).
+        const estadosConDespacho = ['confirmado', 'aprobado', 'en_preparacion', 'despachado', 'entregado']
+        const despachosDerivados = listaPedidos
+          .filter(p => p.envio || estadosConDespacho.includes(safeLower(p.estado)))
+          .map(p => normalizarDespachoDesde(p))
+        setDespachos(despachosDerivados)
       }
 
       if (pagR.status === 'fulfilled') {
         const listaPagos = extraerLista(pagR.value.data).map(normalizarPago)
         setPagos(listaPagos)
-      }
-
-      if (desR.status === 'fulfilled') {
-        const listaDespachos = extraerLista(desR.value.data).map(normalizarDespacho)
-        setDespachos(listaDespachos)
       }
 
       if (dteR.status === 'fulfilled') {
@@ -697,8 +722,10 @@ export default function PanelPage() {
                           <tr>
                             <th>Tracking</th>
                             <th>Pedido</th>
+                            <th>Cliente</th>
                             <th>Courier</th>
                             <th>Estado</th>
+                            <th>Costo envío</th>
                             <th>Entrega est.</th>
                             <th>Acción</th>
                           </tr>
@@ -713,6 +740,10 @@ export default function PanelPage() {
 
                                 <td>#{d.pedido}</td>
 
+                                <td style={{ fontSize: '0.85rem' }}>
+                                  {d.usuario_email || d.usuario_nombre || '-'}
+                                </td>
+
                                 <td>{formatTexto(d.courier)}</td>
 
                                 <td>
@@ -720,6 +751,8 @@ export default function PanelPage() {
                             {d.estado_display || formatEstado(d.estado)}
                           </span>
                                 </td>
+
+                                <td>{d.costo_envio != null ? formatPrecio(d.costo_envio) : '-'}</td>
 
                                 <td>{formatFecha(d.fecha_estimada_entrega)}</td>
 
