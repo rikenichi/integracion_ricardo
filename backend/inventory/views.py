@@ -303,3 +303,138 @@ class TrasladoListView(StaffOnlyMixin, APIView):
         if permiso is not None:
             return permiso
         return Response([])
+
+
+def _resolver_nombre_por_indice(queryset_nombres, id_raw):
+    """Devuelve el nombre correspondiente al índice 1-based que envía el frontend."""
+    try:
+        idx = int(id_raw) - 1
+        nombres = list(queryset_nombres)
+        if 0 <= idx < len(nombres):
+            return nombres[idx]
+    except (TypeError, ValueError):
+        pass
+    return ''
+
+
+class IngresarProductoView(StaffOnlyMixin, APIView):
+    """
+    POST /api/inventory/ingresar-producto/
+
+    Crea o recupera un Producto por SKU y actualiza su stock_disponible.
+    No existen modelos de Lote, Inventario ni Movimiento en esta versión,
+    por lo que codigo_lote/fecha_vencimiento se aceptan pero no se persisten.
+    """
+
+    def post(self, request):
+        permiso = self.validar_staff(request)
+        if permiso is not None:
+            return permiso
+
+        data = request.data
+
+        # --- campos obligatorios ---
+        codigo = str(data.get('sku') or data.get('codigo') or '').strip()
+        if not codigo:
+            return Response(
+                {'error': 'El campo SKU/código es obligatorio.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        nombre = str(data.get('nombre') or '').strip()
+        if not nombre:
+            return Response(
+                {'error': 'El campo nombre es obligatorio.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        precio_raw = data.get('valor_unitario') or data.get('precio') or data.get('precio_b2c') or 0
+        try:
+            precio = int(precio_raw)
+            if precio < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response(
+                {'error': 'El valor unitario debe ser un número mayor o igual a 0.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            cantidad = int(data.get('cantidad') or 0)
+            if cantidad < 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response(
+                {'error': 'La cantidad inicial debe ser un número mayor o igual a 0.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # --- resolver marca y categoría desde índice 1-based ---
+        nombres_marcas = (
+            Producto.objects
+            .exclude(marca_nombre='')
+            .values_list('marca_nombre', flat=True)
+            .distinct()
+            .order_by('marca_nombre')
+        )
+        nombres_cats = (
+            Producto.objects
+            .exclude(categoria_nombre='')
+            .values_list('categoria_nombre', flat=True)
+            .distinct()
+            .order_by('categoria_nombre')
+        )
+
+        marca_nombre = _resolver_nombre_por_indice(nombres_marcas, data.get('marca_id'))
+
+        categoria_nombre = ''
+        categoria_ids_raw = data.get('categoria_ids') or []
+        if categoria_ids_raw:
+            categoria_nombre = _resolver_nombre_por_indice(nombres_cats, categoria_ids_raw[0])
+
+        # --- crear o recuperar producto por SKU/codigo ---
+        producto, creado = Producto.objects.get_or_create(
+            codigo=codigo,
+            defaults={
+                'sku': codigo,
+                'nombre': nombre,
+                'descripcion': str(data.get('descripcion') or '').strip(),
+                'precio_b2c': precio,
+                'precio_b2b': precio,
+                'stock_disponible': cantidad,
+                'marca_nombre': marca_nombre,
+                'categoria_nombre': categoria_nombre,
+                'imagen_url': str(data.get('imagen_url') or '').strip(),
+                'requiere_receta': bool(data.get('requiere_receta', False)),
+                'activo': bool(data.get('activo', True)),
+            },
+        )
+
+        if not creado:
+            # Producto ya existe: actualizar campos y sumar stock
+            producto.nombre = nombre
+            producto.descripcion = str(data.get('descripcion') or '').strip()
+            producto.precio_b2c = precio
+            producto.precio_b2b = precio
+            producto.stock_disponible += cantidad
+            if marca_nombre:
+                producto.marca_nombre = marca_nombre
+            if categoria_nombre:
+                producto.categoria_nombre = categoria_nombre
+            imagen = str(data.get('imagen_url') or '').strip()
+            if imagen:
+                producto.imagen_url = imagen
+            producto.requiere_receta = bool(data.get('requiere_receta', False))
+            producto.activo = bool(data.get('activo', True))
+            producto.save()
+
+        serializer = ProductoSerializer(producto)
+        mensaje = (
+            f'Producto creado con stock inicial de {cantidad} unidades.'
+            if creado
+            else f'Producto recuperado. Stock actualizado sumando {cantidad} unidades.'
+        )
+        return Response(
+            {'mensaje': mensaje, 'producto': serializer.data},
+            status=status.HTTP_201_CREATED,
+        )
