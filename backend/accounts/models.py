@@ -91,6 +91,27 @@ class EnvioPedido(models.Model):
         return f'{self.numero_tracking} - Pedido #{self.pedido_id}'
 
 
+class ConvenioB2B(models.Model):
+    perfil_cliente = models.OneToOneField(
+        PerfilCliente,
+        on_delete=models.CASCADE,
+        related_name='convenio_b2b',
+    )
+    nombre = models.CharField(max_length=120)
+    porcentaje_descuento = models.PositiveSmallIntegerField(
+        default=10,
+        help_text='Porcentaje de descuento sobre precio_b2c (0-100).',
+    )
+    activo = models.BooleanField(default=True)
+    fecha_inicio = models.DateField(null=True, blank=True)
+    fecha_fin = models.DateField(null=True, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'Convenio {self.nombre} ({self.porcentaje_descuento}%) - {self.perfil_cliente}'
+
+
 class PerfilTrabajador(models.Model):
     usuario = models.OneToOneField(
         settings.AUTH_USER_MODEL,

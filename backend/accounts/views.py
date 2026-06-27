@@ -21,6 +21,7 @@ from transbank.webpay.webpay_plus.transaction import Transaction
 from inventory.models import Producto
 from .billing import generar_documento_mock_para_pedido
 from .models import (
+    ConvenioB2B,
     DireccionEntrega,
     DocumentoTributario,
     EnvioPedido,
@@ -31,6 +32,25 @@ from .models import (
 
 
 User = get_user_model()
+
+
+def descuento_b2b_para_usuario(user):
+    """Retorna el porcentaje de descuento activo del ConvenioB2B del usuario.
+    Requiere: PerfilCliente con tipo_cliente INSTITUCIONAL, convenio activo
+    y dentro del rango de fechas si se definieron. Devuelve 0 en otro caso."""
+    from datetime import date
+    perfil = getattr(user, 'perfil_cliente', None)
+    if not perfil or perfil.tipo_cliente != 'INSTITUCIONAL':
+        return 0
+    convenio = getattr(perfil, 'convenio_b2b', None)
+    if not convenio or not convenio.activo:
+        return 0
+    hoy = date.today()
+    if convenio.fecha_inicio and hoy < convenio.fecha_inicio:
+        return 0
+    if convenio.fecha_fin and hoy > convenio.fecha_fin:
+        return 0
+    return convenio.porcentaje_descuento
 
 
 def webpay_transaction():
@@ -461,7 +481,7 @@ class PedidoCreateView(APIView):
                 pedido.estado.replace('_', ' ').title(),
             ),
             'subtotal': pedido.subtotal,
-            'descuento': 0,
+            'descuento': pedido.datos.get('descuento_pct', 0),
             'total': pedido.total,
             'monto_total': pedido.total,
             'detalles': pedido.detalles,
@@ -521,7 +541,9 @@ class PedidoCreateView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            subtotal = producto.precio_b2c * cantidad
+            pct_descuento = descuento_b2b_para_usuario(request.user)
+            precio_unitario = round(producto.precio_b2c * (1 - pct_descuento / 100))
+            subtotal = precio_unitario * cantidad
             total += subtotal
             detalles_respuesta.append(
                 {
@@ -530,7 +552,9 @@ class PedidoCreateView(APIView):
                     'producto_nombre': producto.nombre,
                     'nombre': producto.nombre,
                     'cantidad': cantidad,
-                    'precio_unitario': producto.precio_b2c,
+                    'precio_b2c': producto.precio_b2c,
+                    'precio_unitario': precio_unitario,
+                    'descuento_pct': pct_descuento,
                     'subtotal': subtotal,
                 }
             )
@@ -581,6 +605,7 @@ class PedidoCreateView(APIView):
                 'receta_confirmada': receta_confirmada,
                 'receta_observacion': receta_observacion,
                 'productos_con_receta': productos_con_receta,
+                'descuento_pct': pct_descuento,
             },
         )
 

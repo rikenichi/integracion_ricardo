@@ -17,6 +17,11 @@ export function formatPrecio(valor) {
 }
 
 export function obtenerPrecioProducto(producto, esB2B = false) {
+  // Para B2B: si el backend envió precio_final con descuento de convenio, usarlo.
+  if (esB2B && typeof producto?.precio_final === 'number' && producto.precio_final > 0) {
+    return producto.precio_final
+  }
+
   const candidatos = esB2B
     ? [
         producto?.precio_con_iva,

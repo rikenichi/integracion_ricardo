@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.views import descuento_b2b_para_usuario
 from .models import Producto
 from .serializers import ProductoSerializer
 
@@ -58,6 +59,24 @@ class StaffOnlyMixin:
         )
 
 
+def _inyectar_precio_convenio(data_list, pct_descuento):
+    """Agrega precio_final, descuento_porcentaje y tiene_convenio a la lista."""
+    result = []
+    for item in data_list:
+        item = dict(item)
+        precio_b2c = item.get('precio_b2c') or item.get('precio_con_iva') or 0
+        if pct_descuento > 0:
+            item['precio_final'] = round(precio_b2c * (1 - pct_descuento / 100))
+            item['descuento_porcentaje'] = pct_descuento
+            item['tiene_convenio'] = True
+        else:
+            item['precio_final'] = precio_b2c
+            item['descuento_porcentaje'] = 0
+            item['tiene_convenio'] = False
+        result.append(item)
+    return result
+
+
 class CatalogoProductoView(APIView):
     def get(self, request):
         if not Producto.objects.exists():
@@ -65,7 +84,8 @@ class CatalogoProductoView(APIView):
 
         productos = Producto.objects.filter(activo=True).order_by('id')
         serializer = ProductoSerializer(productos, many=True)
-        return Response(serializer.data)
+        pct = descuento_b2b_para_usuario(request.user) if request.user.is_authenticated else 0
+        return Response(_inyectar_precio_convenio(serializer.data, pct))
 
 
 class ProductoDetalleView(APIView):
@@ -79,7 +99,9 @@ class ProductoDetalleView(APIView):
             filtro,
         )
         serializer = ProductoSerializer(producto)
-        return Response(serializer.data)
+        pct = descuento_b2b_para_usuario(request.user) if request.user.is_authenticated else 0
+        data = _inyectar_precio_convenio([serializer.data], pct)
+        return Response(data[0])
 
 
 class CategoriaProductoView(APIView):
