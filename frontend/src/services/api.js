@@ -51,25 +51,62 @@ function esRutaSinRefresh(url) {
   )
 }
 
-let refreshEnCurso = null
+// Cola de callbacks pendientes mientras un refresh está en curso.
+// Cuando el refresh completa, todos los callbacks se resuelven con el nuevo token
+// (o se rechazan si el refresh falla).  Esto evita lanzar múltiples requests de
+// refresh cuando varias llamadas fallan con 401 simultáneamente.
+let refreshEnCurso = false
+let colaRefresh = []  // [{resolve, reject}]
+
+function procesarColaRefresh(error, nuevoToken) {
+  colaRefresh.forEach(({ resolve, reject }) =>
+    error ? reject(error) : resolve(nuevoToken)
+  )
+  colaRefresh = []
+}
+
+function limpiarSesion() {
+  // Solo borra tokens; preserva carrito, cotizaciones y preferencias de UI.
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('refresh_token')
+  if (window.location.pathname !== '/login') {
+    window.location.href = '/login'
+  }
+}
 
 export function refrescarAccessToken() {
   const refresh = localStorage.getItem('refresh_token')
-  if (!refresh) return Promise.reject(new Error('Refresh token no disponible'))
-  if (refreshEnCurso) return refreshEnCurso
+  if (!refresh) {
+    limpiarSesion()
+    return Promise.reject(new Error('Refresh token no disponible'))
+  }
 
-  refreshEnCurso = axios
+  // Si ya hay un refresh en curso, encolar y esperar su resolución.
+  if (refreshEnCurso) {
+    return new Promise((resolve, reject) => {
+      colaRefresh.push({ resolve, reject })
+    })
+  }
+
+  refreshEnCurso = true
+
+  return axios
     .post(`${API_URL}/accounts/login/refresh/`, { refresh })
     .then(({ data }) => {
-      localStorage.setItem('access_token', data.access)
+      const nuevoToken = data.access
+      localStorage.setItem('access_token', nuevoToken)
       if (data.refresh) localStorage.setItem('refresh_token', data.refresh)
-      return data.access
+      procesarColaRefresh(null, nuevoToken)
+      return nuevoToken
+    })
+    .catch((err) => {
+      procesarColaRefresh(err, null)
+      limpiarSesion()
+      return Promise.reject(err)
     })
     .finally(() => {
-      refreshEnCurso = null
+      refreshEnCurso = false
     })
-
-  return refreshEnCurso
 }
 
 api.interceptors.request.use((config) => {
@@ -83,7 +120,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const original = error.config || {}
+    const original = error.config
+    if (!original) return Promise.reject(error)
+
     const refresh = localStorage.getItem('refresh_token')
     const puedeIntentarRefresh =
       error.response?.status === 401 &&
@@ -95,14 +134,11 @@ api.interceptors.response.use(
       original._retry = true
       try {
         const access = await refrescarAccessToken()
-        original.headers = original.headers || {}
-        original.headers.Authorization = `Bearer ${access}`
+        original.headers = { ...(original.headers || {}), Authorization: `Bearer ${access}` }
         return api(original)
       } catch {
-        localStorage.clear()
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login'
-        }
+        // refrescarAccessToken ya llamó limpiarSesion()
+        return Promise.reject(error)
       }
     }
     return Promise.reject(error)
@@ -531,7 +567,8 @@ function normalizarInventarioResumen(inventarios = [], lotes = [], movimientos =
 }
 
 export async function obtenerResumenInventario() {
-  const [inventariosR, lotesR, movimientosR] = await Promise.all([
+  // Promise.allSettled: si un sub-endpoint falla, los demás siguen funcionando.
+  const [inventariosR, lotesR, movimientosR] = await Promise.allSettled([
     api.get('/inventory/inventarios/'),
     api.get('/inventory/lotes/'),
     api.get('/inventory/movimientos/'),
@@ -539,9 +576,9 @@ export async function obtenerResumenInventario() {
 
   return {
     data: normalizarInventarioResumen(
-      obtenerListaRespuesta(inventariosR.data),
-      obtenerListaRespuesta(lotesR.data),
-      obtenerListaRespuesta(movimientosR.data),
+      inventariosR.status === 'fulfilled' ? obtenerListaRespuesta(inventariosR.value.data) : [],
+      lotesR.status === 'fulfilled' ? obtenerListaRespuesta(lotesR.value.data) : [],
+      movimientosR.status === 'fulfilled' ? obtenerListaRespuesta(movimientosR.value.data) : [],
     ),
   }
 }
