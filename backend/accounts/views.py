@@ -111,6 +111,8 @@ def perfil_usuario(usuario):
 def representar_trabajador(usuario):
     perfil = getattr(usuario, 'perfil_cliente', None)
     grupos = list(usuario.groups.values_list('name', flat=True))
+    # cargo: no existe PerfilTrabajador aún; se deriva del primer grupo como aproximación
+    cargo = grupos[0] if grupos else ''
     return {
         'id': usuario.id,
         'usuario': {
@@ -122,9 +124,9 @@ def representar_trabajador(usuario):
             'is_staff': usuario.is_staff,
             'grupos': grupos,
         },
-        'rut': perfil.rut if perfil else '',
-        'telefono': perfil.telefono if perfil else '',
-        'cargo': '',
+        'rut': perfil.rut if perfil else '',       # vacío sin PerfilTrabajador
+        'telefono': perfil.telefono if perfil else '',  # vacío sin PerfilTrabajador
+        'cargo': cargo,
         'activo': usuario.is_active,
     }
 
