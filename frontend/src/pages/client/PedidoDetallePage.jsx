@@ -296,7 +296,10 @@ export default function PedidoDetallePage() {
             <p><span>Subtotal productos</span><strong>{formatPrecio(pedido.subtotal)}</strong></p>
             {pedido.descuento > 0 && (() => {
               const pct = pedido.descuento
-              const montoDescontado = Math.round(pedido.subtotal * pct / 100)
+              // pedido.subtotal ya tiene el descuento aplicado.
+              // Reconstruimos el subtotal original: subtotalOriginal = subtotal / (1 - pct/100)
+              const subtotalOriginal = Math.round(pedido.subtotal / (1 - pct / 100))
+              const montoDescontado = subtotalOriginal - pedido.subtotal
               return (
                 <p className="muted-total">
                   <span>Descuento B2B ({pct}%)</span>

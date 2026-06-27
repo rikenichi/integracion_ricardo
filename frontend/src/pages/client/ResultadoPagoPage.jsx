@@ -188,11 +188,16 @@ export default function ResultadoPagoPage() {
               <span>Subtotal productos</span><span>{formatPrecio(pedido.subtotal)}</span>
             </div>
             <hr className="divider" />
-            {pedido.descuento > 0 && (
-              <div className="resumen-item" style={{color:'var(--color-success)'}}>
-                <span>Descuento</span><span>− {formatPrecio(pedido.descuento)}</span>
-              </div>
-            )}
+            {pedido.descuento > 0 && (() => {
+              const pct = pedido.descuento
+              const subtotalOriginal = Math.round(pedido.subtotal / (1 - pct / 100))
+              const montoDescontado = subtotalOriginal - pedido.subtotal
+              return (
+                <div className="resumen-item" style={{color:'var(--color-success)'}}>
+                  <span>Descuento B2B ({pct}%)</span><span>− {formatPrecio(montoDescontado)}</span>
+                </div>
+              )
+            })()}
             <div className="resumen-item">
               <span>
                 Envío
