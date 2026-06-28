@@ -268,6 +268,42 @@ def buscar_comuna(regions, county_code):
     return None, None
 
 
+def buscar_county_code_por_nombre(regions, nombre_comuna: str):
+    """Retorna el county_code de una comuna buscando por nombre normalizado.
+
+    Preparado para recotización server-side futura: permite obtener el
+    county_code desde el nombre de comuna almacenado en DireccionEntrega.comuna
+    sin necesidad de una llamada adicional al frontend ni a la API de Chilexpress.
+
+    Estrategia de búsqueda en dos pasos:
+      1. Coincidencia exacta normalizada ("Las Condes" → "LAS CONDES").
+      2. Coincidencia por prefijo si el nombre buscado es subconjunto del nombre
+         en el JSON ("Santiago" matchea "SANTIAGO CENTRO").
+    El primer resultado exacto encontrado tiene precedencia.
+
+    Args:
+        regions: lista de regiones cargada desde chilexpress_cobertura.json.
+        nombre_comuna: nombre libre (ej. "Santiago", "Las Condes").
+    Returns:
+        county_code en mayúsculas (ej. "STGO") o None si no hay coincidencia.
+    """
+    if not nombre_comuna:
+        return None
+    objetivo = normalizar_texto_orden(nombre_comuna)
+    candidato_parcial = None
+    for region in regions:
+        for comuna in region.get("comunas", []):
+            nombre_norm = normalizar_texto_orden(comuna.get("comuna_name", ""))
+            code = str(comuna.get("comuna_code", "")).strip().upper()
+            if not code:
+                continue
+            if nombre_norm == objetivo:
+                return code
+            if candidato_parcial is None and nombre_norm.startswith(objetivo):
+                candidato_parcial = code
+    return candidato_parcial
+
+
 def agregar_metadata_cobertura(response, coverage, warning):
     response["X-Coverage-Source"] = coverage.get("source", "unknown")
     if warning:
