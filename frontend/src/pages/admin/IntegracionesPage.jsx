@@ -102,9 +102,9 @@ export default function IntegracionesPage() {
       <div className="integraciones-header">
         <div>
           <p className="integraciones-kicker">Supervisión interna</p>
-          <h1 className="page-title">Integraciones y auditoría <span className="demo-chip">Demo</span></h1>
+          <h1 className="page-title">Integraciones y auditoría <span className="demo-chip">Módulo interno</span></h1>
           <p className="text-muted">
-            Vista demo de servicios externos, registros técnicos resumidos y auditoría futura.
+            Vista de integraciones externas, registros técnicos y eventos de auditoría del sistema.
           </p>
         </div>
         <div className="integraciones-toolbar">
