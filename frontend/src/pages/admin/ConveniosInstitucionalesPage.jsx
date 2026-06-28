@@ -86,9 +86,9 @@ export default function ConveniosInstitucionalesPage() {
       <div className="convenios-header">
         <div>
           <p className="convenios-kicker">Gestión B2B</p>
-          <h1 className="page-title">Convenios institucionales <span className="demo-chip">Demo</span></h1>
+          <h1 className="page-title">Convenios institucionales <span className="demo-chip">Módulo interno</span></h1>
           <p className="text-muted">
-            Vista demo de condiciones comerciales asociadas a instituciones; pendiente de endpoint backend.
+            Vista referencial de condiciones comerciales asociadas a clientes institucionales.
           </p>
         </div>
         <div className="convenios-toolbar">
