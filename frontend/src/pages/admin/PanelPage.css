@@ -5,10 +5,7 @@
 }
 
 .panel-bienvenida {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 18px;
+  display: block !important;
   margin-bottom: 24px;
   padding: 20px 24px;
   border-color: rgba(0,119,182,0.14);
@@ -19,18 +16,22 @@
 }
 
 .panel-bienvenida > div:first-child {
-  flex: none;
+  display: block;
   width: 100%;
+  margin-bottom: 18px;
 }
 
 .panel-acciones-rapidas {
   width: 100%;
-  display: grid;
+  display: grid !important;
   grid-template-columns: repeat(4, minmax(160px, 1fr));
   gap: 12px;
+  justify-items: stretch;
+  align-items: stretch;
 }
 
-.panel-acciones-rapidas .btn {
+.panel-acciones-rapidas .btn,
+.panel-acciones-rapidas button {
   width: 100%;
   min-height: 42px;
   white-space: normal;
@@ -40,7 +41,7 @@
 
 @media (max-width: 1024px) {
   .panel-acciones-rapidas {
-    grid-template-columns: repeat(3, minmax(140px, 1fr));
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
   }
 }
 
