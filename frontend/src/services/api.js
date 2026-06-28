@@ -118,10 +118,10 @@ function respuestaDemo(data) {
 const DEMO_PROVEEDORES = [
   {
     id: 1,
-    nombre_empresa: 'Proveedor Clinico Demo SpA',
+    nombre_empresa: 'Proveedor Clínico Medistock SpA',
     rut: '76.000.000-0',
     contacto: 'Mesa de abastecimiento',
-    email: 'compras.demo@medistock.cl',
+    email: 'compras@medistock.cl',
     telefono: '+56 2 2000 0000',
     activo: true,
   },
@@ -130,13 +130,13 @@ const DEMO_PROVEEDORES = [
 const DEMO_ORDENES_COMPRA = [
   {
     id: 3001,
-    proveedor_nombre: 'Proveedor Clinico Demo SpA',
+    proveedor_nombre: 'Proveedor Clínico Medistock SpA',
     sucursal_nombre: 'Sucursal Central',
     usuario_username: 'operador_logistica',
     fecha_compra: '2026-05-19T09:00:00Z',
-    estado: 'demo',
-    estado_display: 'Demo',
-    observacion: 'Orden de compra ilustrativa hasta exponer procurement en API.',
+    estado: 'referencial',
+    estado_display: 'Referencial',
+    observacion: 'Orden de compra referencial para seguimiento interno de proveedores.',
   },
 ]
 
