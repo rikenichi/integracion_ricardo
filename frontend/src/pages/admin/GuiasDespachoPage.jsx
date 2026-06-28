@@ -32,9 +32,9 @@ export default function GuiasDespachoPage() {
       <div className="guias-header">
         <div>
           <p className="guias-kicker">Despacho administrativo</p>
-          <h1 className="page-title">Guias de despacho <span className="demo-chip">Pendiente backend</span></h1>
+          <h1 className="page-title">Guias de despacho <span className="demo-chip">Módulo documental</span></h1>
           <p className="text-muted">
-            No hay endpoint real expuesto para listar o administrar guias de despacho. El tracking operativo sigue disponible por pedido.
+            Consulta administrativa para documentación de despacho y respaldo logístico.
           </p>
         </div>
         <div className="guias-toolbar">
@@ -45,9 +45,9 @@ export default function GuiasDespachoPage() {
       </div>
 
       <section className="card guias-pendiente">
-        <h2>Modulo documental pendiente</h2>
+        <h2>Documentación de despacho</h2>
         <p className="text-muted">
-          Para evitar datos inventados, esta pantalla no muestra guias simuladas. Cuando el backend exponga una URL real para documentos de despacho, se podra conectar aqui.
+          La documentación de despacho se mantiene como respaldo administrativo del proceso logístico. El seguimiento operativo del pedido está disponible desde el detalle de cada pedido.
         </p>
         <button className="btn btn-primary" onClick={() => navigate('/panel')}>
           Volver al panel
