@@ -64,6 +64,56 @@
   min-width: 360px;
 }
 
+/* ── Tabla de conciliación: ancho completo en escritorio ── */
+
+.conciliacion-page .tabla-container {
+  overflow-x: visible;
+  padding: 0;
+}
+
+.conciliacion-page .data-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: auto;
+}
+
+.conciliacion-page .data-table th,
+.conciliacion-page .data-table td {
+  padding: 9px 8px;
+  font-size: 0.8rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Observación: permite wrap para no ensanchar en exceso */
+.conciliacion-page .data-table td:nth-child(9) {
+  white-space: normal;
+  min-width: 140px;
+  max-width: 220px;
+}
+
+/* Acciones: siempre nowrap para que los botones no se partan */
+.conciliacion-page .data-table td:last-child {
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* En móvil vuelve el scroll horizontal */
+@media (max-width: 1023px) {
+  .conciliacion-page .tabla-container {
+    overflow-x: auto;
+  }
+
+  .conciliacion-page .data-table {
+    min-width: 860px;
+  }
+
+  .conciliacion-page .data-table th,
+  .conciliacion-page .data-table td {
+    white-space: nowrap;
+  }
+}
+
 @media (max-width: 760px) {
   .conciliacion-header {
     flex-direction: column;
