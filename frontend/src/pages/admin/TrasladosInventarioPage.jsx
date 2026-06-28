@@ -92,7 +92,7 @@ export default function TrasladosInventarioPage() {
           <p className="traslados-kicker">Inventario interno</p>
           <h1 className="page-title">Traslados de inventario</h1>
           <p className="text-muted">
-            Consulta real de transferencias entre sucursales. Las transiciones de estado quedan pendientes de endpoint backend.
+            Consulta de transferencias entre sucursales para seguimiento interno de inventario.
           </p>
         </div>
         <div className="traslados-toolbar">
