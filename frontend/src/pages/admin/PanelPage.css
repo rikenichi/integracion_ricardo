@@ -5,21 +5,60 @@
 }
 
 .panel-bienvenida {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 24px; padding: 20px 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 20px 24px;
   border-color: rgba(0,119,182,0.14);
   background:
     radial-gradient(circle at 95% 5%, rgba(72,202,228,0.16), transparent 24%),
     #fff;
   box-shadow: var(--shadow-md);
 }
+
+.panel-bienvenida > div:first-child {
+  flex: 0 0 180px;
+}
+
 .panel-acciones-rapidas {
+  flex: 1;
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 10px 12px;
 }
-@media (max-width: 600px) { .panel-bienvenida { flex-direction: column; gap: 16px; } }
+
+.panel-acciones-rapidas .btn {
+  min-width: 140px;
+  max-width: 190px;
+  white-space: normal;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .panel-bienvenida {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .panel-bienvenida > div:first-child {
+    flex: unset;
+  }
+
+  .panel-acciones-rapidas {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .panel-acciones-rapidas .btn {
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+  }
+}
 
 .panel-tabs {
   display: flex; gap: 4px; margin-bottom: 20px;
