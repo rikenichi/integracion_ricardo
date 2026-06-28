@@ -172,7 +172,7 @@ const DEMO_REGISTROS_INTEGRACION = [
     endpoint: '/api/payments/webpay/iniciar/',
     estado: 'exitoso',
     codigo_respuesta: 201,
-    mensaje: 'Demo de registro tecnico; no persistido en backend.',
+    mensaje: 'Registro técnico referencial para seguimiento de integración.',
     creado_en: '2026-05-20T14:00:00Z',
   },
 ]
@@ -196,13 +196,13 @@ const DEMO_CONVENIOS = [
     id: 1,
     institucion_nombre: 'Clinica Baviera',
     institucion_rut: '76.123.456-7',
-    nombre_convenio: 'Convenio B2B demo',
+    nombre_convenio: 'Convenio B2B institucional',
     fecha_inicio: '2026-01-01',
     fecha_fin: '2026-12-31',
     porcentaje_descuento: 10,
     condiciones_pago: 'Webpay o transferencia institucional',
     estado: 'activo',
-    observacion: 'Demo hasta exponer convenio institucional por API.',
+    observacion: 'Convenio institucional vigente para clientes B2B.',
   },
 ]
 
