@@ -3,9 +3,9 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import './LoginPage.css'
 
-const ES_DESARROLLO = import.meta.env.DEV
+const MOSTRAR_USUARIOS_PRUEBA = import.meta.env.DEV && import.meta.env.VITE_SHOW_TEST_USERS === 'true'
 
-const USUARIOS_DEMO = ES_DESARROLLO
+const USUARIOS_DEMO = MOSTRAR_USUARIOS_PRUEBA
   ? [
       // DEMO LOCAL: accesos rapidos solo para desarrollo; Vite los elimina del build de produccion.
       { label: 'Admin', username: import.meta.env.VITE_DEMO_ADMIN_USER || 'admin', password: import.meta.env.VITE_DEMO_ADMIN_PASSWORD || '' },
@@ -95,7 +95,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {ES_DESARROLLO && (
+        {MOSTRAR_USUARIOS_PRUEBA && (
           <div className="demo-section">
             <p className="demo-title">Usuarios de prueba (demo local)</p>
             <div className="demo-btns">
