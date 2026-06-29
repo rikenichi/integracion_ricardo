@@ -302,42 +302,31 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {!loading && !error && ofertasVisuales.length > 0 ? (
-          <div className="home-offers-track" aria-label="Carrusel de ofertas">
-            {ofertasVisuales.map((producto, index) => {
-              // DEMO visual: el descuento se deriva en frontend solo para presentar la seccion de ofertas.
-              const oferta = crearOfertaVisual(producto, index, esB2B)
-              const sinStock = obtenerStock(producto) <= 0
-
-              return (
-                <article className="home-offer-card" key={producto.id}>
-                  <span className="offer-badge">-{oferta.descuento}%</span>
-                  <div className="offer-image">
-                    <span>{producto.nombre?.slice(0, 1) || '+'}</span>
-                  </div>
-                  <div className="offer-content">
-                    <small>{producto.categoria?.nombre || 'Insumo medico'}</small>
-                    <h3>{producto.nombre}</h3>
-                    <div className="offer-prices">
-                      {oferta.precioAnterior > 0 && <span>{formatearPrecio(oferta.precioAnterior)}</span>}
-                      <strong>{formatearPrecio(oferta.precioActual)}</strong>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => agregarItem(producto)}
-                    disabled={sinStock || !usuarioPuedeComprar}
-                    title={!usuarioPuedeComprar ? mensajeNoCompra : ''}
-                  >
-                    Agregar al carro
-                  </button>
-                </article>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="home-state">Las ofertas se mostraran cuando el catalogo tenga productos disponibles.</div>
-        )}
+        <div className="home-offers-track" aria-label="Oferta destacada">
+          <article className="home-offer-card">
+            <span className="offer-badge">-17%</span>
+            <div className="offer-image">
+              <img
+                src={resolverImagenProducto({ nombre: 'Guantes clínicos' })}
+                alt="Guantes clínicos"
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex' }}
+              />
+              <span style={{ display: 'none' }}>G</span>
+            </div>
+            <div className="offer-content">
+              <small>Insumos clínicos</small>
+              <h3>Guantes clínicos</h3>
+              <div className="offer-prices">
+                <span>{formatearPrecio(5990)}</span>
+                <strong>{formatearPrecio(4990)}</strong>
+              </div>
+            </div>
+            <Link className="btn-outline" to="/catalogo">
+              Ver en catálogo
+            </Link>
+          </article>
+        </div>
       </section>
 
       <section className="home-benefits" aria-label="Beneficios Medistock">
