@@ -4,6 +4,7 @@ import { obtenerProductosCompatibles } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import { useCarrito } from '../../context/CarritoContext'
 import { puedeComprar, razonNoCompra } from '../../utils/permisos'
+import { resolverImagenProducto } from '../../utils/imagenProducto'
 import Footer from '../../components/Footer'
 import './HomePage.css'
 
@@ -230,7 +231,13 @@ export default function HomePage() {
               return (
                 <article className="home-product-card" key={producto.id} style={{ animationDelay: `${index * 45}ms` }}>
                   <div className="product-image-placeholder">
-                    <span>{producto.categoria?.nombre?.slice(0, 1) || 'M'}</span>
+                    <img
+                      src={resolverImagenProducto(producto)}
+                      alt={producto.nombre}
+                      style={{width:'100%',height:'100%',objectFit:'contain'}}
+                      onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex' }}
+                    />
+                    <span style={{display:'none'}}>{producto.categoria?.nombre?.slice(0, 1) || 'M'}</span>
                   </div>
                   <div className="product-card-body">
                     <div className="product-card-meta">
