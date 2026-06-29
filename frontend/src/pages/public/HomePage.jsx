@@ -18,6 +18,7 @@ const heroSlides = [
     secondary: 'Crear cuenta',
     secondaryTo: '/registro',
     tone: 'slide-compra',
+    imagen: '/images/banners/banner-institucional.png',
   },
   {
     eyebrow: 'Despacho integrado',
@@ -28,6 +29,7 @@ const heroSlides = [
     secondary: 'Ver carrito',
     secondaryTo: '/carrito',
     tone: 'slide-despacho',
+    imagen: '/images/banners/banner-despacho.png',
   },
   {
     eyebrow: 'Pago seguro',
@@ -38,6 +40,7 @@ const heroSlides = [
     secondary: 'Mis pedidos',
     secondaryTo: '/mis-pedidos',
     tone: 'slide-webpay',
+    imagen: '/images/banners/banner-pago-seguro.png',
   },
   {
     eyebrow: 'Stock actualizado',
@@ -48,6 +51,7 @@ const heroSlides = [
     secondary: 'Mi panel',
     secondaryTo: '/panel',
     tone: 'slide-stock',
+    imagen: '/images/banners/banner-stock.png',
   },
 ]
 
@@ -177,7 +181,18 @@ export default function HomePage() {
               </div>
 
               <div className="home-hero-visual" aria-hidden="true">
-                <div className="hero-product-pack">
+                {slide.imagen ? (
+                  <img
+                    src={slide.imagen}
+                    alt=""
+                    className="hero-banner-img"
+                    onError={e => {
+                      e.currentTarget.style.display = 'none'
+                      e.currentTarget.nextSibling.style.display = 'flex'
+                    }}
+                  />
+                ) : null}
+                <div className="hero-product-pack" style={slide.imagen ? {display:'none'} : {}}>
                   <span className="hero-pack-pill">Medistock</span>
                   <div className="hero-pack-box">
                     <span className="hero-pack-cross">+</span>
