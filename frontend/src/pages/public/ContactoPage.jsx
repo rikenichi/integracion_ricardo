@@ -141,9 +141,26 @@ export default function ContactoPage() {
             <span className="contacto-icon">📍</span>
             <div>
               <strong>Casa matriz</strong>
-              <span>Av. Providencia 1234, Providencia, Santiago</span>
+              <span>Antonio Varas 666, Providencia, Santiago</span>
               <small>5 centros de distribución a nivel nacional</small>
             </div>
+          </div>
+
+          <div className="contacto-mapa">
+            <p className="contacto-mapa-label">Ubicación referencial</p>
+            <iframe
+              title="Ubicación Medistock"
+              src="https://www.google.com/maps?q=Antonio+Varas+666,+Providencia,+Santiago,+Chile&output=embed"
+              width="100%"
+              height="260"
+              style={{ border: 0, borderRadius: 'var(--radius)', display: 'block' }}
+              allowFullScreen=""
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+            <small className="text-muted" style={{ display: 'block', marginTop: 6, fontSize: '0.75rem' }}>
+              Dirección utilizada para demostración de punto de atención físico.
+            </small>
           </div>
         </section>
 

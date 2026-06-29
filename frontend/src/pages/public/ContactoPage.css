@@ -73,6 +73,19 @@
   font-size: 0.78rem;
 }
 
+.contacto-mapa {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.contacto-mapa-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+
 .contacto-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
