@@ -602,6 +602,7 @@
   gap: 1rem;
   grid-auto-columns: calc((100% - 3rem) / 4);
   grid-auto-flow: column;
+  justify-content: center;
   overflow-x: auto;
   padding: 0.2rem 0 0.8rem;
   scroll-snap-type: x mandatory;

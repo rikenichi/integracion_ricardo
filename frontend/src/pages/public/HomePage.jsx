@@ -295,7 +295,7 @@ export default function HomePage() {
       <section className="home-section home-offers-section">
         <div className="section-heading offers-heading">
           <div>
-            <h2>Promociones visuales</h2>
+            <h2>Promoción destacada</h2>
           </div>
           <Link className="btn-outline" to="/catalogo">
             Ver todas las ofertas
