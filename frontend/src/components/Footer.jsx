@@ -6,25 +6,26 @@ export default function Footer() {
     <footer className="site-footer" id="contacto">
       <div>
         <strong>MEDISTOCK</strong>
-        <p>Venta y gestion de insumos medicos para clientes B2C y B2B.</p>
+        <p>Venta y gestión de insumos médicos para clientes B2C e instituciones B2B.</p>
       </div>
       <div>
         <strong>Contacto</strong>
-        <p>Canal de soporte academico del prototipo.</p>
+        <p>contacto@medistock.cl</p>
+        <p>+56 2 2000 0000</p>
       </div>
       <div>
         <strong>Horario</strong>
         <p>Lunes a viernes, 09:00 a 18:00.</p>
       </div>
       <div>
-        <strong>Enlaces utiles</strong>
-        <Link to="/catalogo">Catalogo</Link>
+        <strong>Enlaces útiles</strong>
+        <Link to="/catalogo">Catálogo</Link>
         <Link to="/mis-pedidos">Mis pedidos</Link>
         <Link to="/tracking">Tracking</Link>
       </div>
       <div>
-        <strong>Politicas</strong>
-        <p>Informacion referencial para fines de demostracion.</p>
+        <strong>Políticas</strong>
+        <p>Términos de uso y política de privacidad disponibles en sucursales.</p>
       </div>
     </footer>
   )

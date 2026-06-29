@@ -10,10 +10,10 @@ import './HomePage.css'
 
 const heroSlides = [
   {
-    eyebrow: 'Ecommerce medico',
-    title: 'Compra medicamentos e insumos medicos en linea',
-    text: 'Encuentra productos para pacientes, hogares, clinicas e instituciones con una experiencia simple y conectada.',
-    cta: 'Ver catalogo',
+    eyebrow: 'E-commerce médico',
+    title: 'Compra medicamentos e insumos médicos en línea',
+    text: 'Encuentra productos para pacientes, hogares, clínicas e instituciones con una experiencia simple y conectada.',
+    cta: 'Ver catálogo',
     ctaTo: '/catalogo',
     secondary: 'Crear cuenta',
     secondaryTo: '/registro',
@@ -23,7 +23,7 @@ const heroSlides = [
   {
     eyebrow: 'Despacho integrado',
     title: 'Cotiza tu despacho antes de pagar',
-    text: 'Revisa costos y disponibilidad logistica durante la confirmacion del pedido, antes de iniciar el pago.',
+    text: 'Revisa costos y disponibilidad logística durante la confirmación del pedido, antes de iniciar el pago.',
     cta: 'Armar pedido',
     ctaTo: '/catalogo',
     secondary: 'Ver carrito',
@@ -33,8 +33,8 @@ const heroSlides = [
   },
   {
     eyebrow: 'Pago seguro',
-    title: 'Paga seguro con Webpay Plus en linea',
-    text: 'Inicia el pago desde tu pedido y vuelve a Medistock con un resultado claro para continuar el seguimiento.',
+    title: 'Paga con seguridad usando Webpay Plus',
+    text: 'Inicia el pago desde tu pedido y recibe confirmación inmediata para continuar el seguimiento.',
     cta: 'Comprar ahora',
     ctaTo: '/catalogo',
     secondary: 'Mis pedidos',
@@ -44,8 +44,8 @@ const heroSlides = [
   },
   {
     eyebrow: 'Stock actualizado',
-    title: 'Inventario visible para pacientes y clinicas',
-    text: 'Consulta disponibilidad, precios y datos de producto desde el catalogo conectado al backend.',
+    title: 'Inventario visible para pacientes y clínicas',
+    text: 'Consulta disponibilidad, precios y datos de producto desde el catálogo conectado en tiempo real.',
     cta: 'Explorar stock',
     ctaTo: '/catalogo',
     secondary: 'Mi panel',
@@ -62,12 +62,12 @@ const beneficios = [
 ]
 
 const categoriasVisuales = [
-  { titulo: 'Jeringas', texto: 'Insumos de aplicacion', busqueda: 'jeringa', icono: 'J', clase: 'cat-jeringas' },
-  { titulo: 'Guantes', texto: 'Proteccion clinica', busqueda: 'guantes', icono: 'G', clase: 'cat-guantes' },
+  { titulo: 'Jeringas', texto: 'Insumos de aplicación clínica', busqueda: 'jeringa', icono: 'J', clase: 'cat-jeringas' },
+  { titulo: 'Guantes', texto: 'Protección clínica y quirúrgica', busqueda: 'guantes', icono: 'G', clase: 'cat-guantes' },
   { titulo: 'Gasas y compresas', texto: 'Curaciones y primeros auxilios', busqueda: 'gasa', icono: 'C', clase: 'cat-gasas' },
-  { titulo: 'Insumos medicos', texto: 'Uso profesional y hogar', busqueda: 'insumo', icono: 'M', clase: 'cat-insumos' },
+  { titulo: 'Insumos médicos', texto: 'Uso profesional y domiciliario', busqueda: 'insumo', icono: 'M', clase: 'cat-insumos' },
   { titulo: 'Suplementos', texto: 'Bienestar y apoyo nutricional', busqueda: 'suplemento', icono: 'S', clase: 'cat-suplementos' },
-  { titulo: 'Cuidado de heridas', texto: 'Apositos y tratamiento', busqueda: 'herida', icono: 'H', clase: 'cat-heridas' },
+  { titulo: 'Cuidado de heridas', texto: 'Apósitos y tratamiento tópico', busqueda: 'herida', icono: 'H', clase: 'cat-heridas' },
 ]
 
 const descuentosDemo = [12, 18, 15, 20, 10, 16, 14, 22]
@@ -355,11 +355,10 @@ export default function HomePage() {
 
       <section className="home-platform-banner">
         <div>
-          <span>Integracion de Plataformas</span>
-          <h2>Un flujo completo desde catalogo hasta tracking</h2>
+          <span>Plataforma integrada</span>
+          <h2>Tecnología conectada para distribución médica</h2>
           <p>
-            Medistock integra frontend, backend, base de datos, pedidos, pagos y logistica en un prototipo funcional
-            preparado para demostracion academica.
+            Pedidos, pagos, convenios B2B y logística en una sola plataforma.
           </p>
         </div>
         <Link to="/panel">Ir a mi panel</Link>
