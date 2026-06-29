@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import { puedeComprar, razonNoCompra } from '../../utils/permisos'
 import { Badge, Button, Spinner } from '../../components/ui'
 import { formatPrecio, obtenerPrecioProducto } from '../../utils/format'
+import { resolverImagenProducto } from '../../utils/imagenProducto'
 import './ProductoDetallePage.css'
 
 export default function ProductoDetallePage() {
@@ -65,7 +66,13 @@ export default function ProductoDetallePage() {
 
       <div className="detalle-grid mt-2">
         <div className="detalle-imagen card">
-          <span style={{fontSize:'5rem'}}>🏥</span>
+          <img
+            src={resolverImagenProducto(producto)}
+            alt={producto.nombre}
+            style={{width:'100%', maxHeight:'220px', objectFit:'contain', borderRadius:'var(--radius)'}}
+            onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block' }}
+          />
+          <span style={{fontSize:'5rem', display:'none'}}>🏥</span>
           <Badge variant="secondary" className="mt-1">{producto.categoria_nombre}</Badge>
         </div>
 

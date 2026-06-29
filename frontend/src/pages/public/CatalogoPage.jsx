@@ -7,6 +7,7 @@ import Footer from '../../components/Footer'
 import { filtrarPorGrupo, obtenerGrupo } from '../../utils/gruposCatalogo'
 import { puedeComprar, razonNoCompra } from '../../utils/permisos'
 import { obtenerPrecioProducto } from '../../utils/format'
+import { resolverImagenProducto } from '../../utils/imagenProducto'
 import './CatalogoPage.css'
 
 function formatPrecio(n) {
@@ -194,10 +195,12 @@ export default function CatalogoPage() {
                 )
               })()}
               <div className="producto-img">
-                {p.imagen_url
-                  ? <img src={p.imagen_url} alt={p.nombre} />
-                  : <span className="producto-icon">🏥</span>
-                }
+                <img
+                  src={resolverImagenProducto(p)}
+                  alt={p.nombre}
+                  onError={e => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex' }}
+                />
+                <span className="producto-icon" style={{display:'none'}}>🏥</span>
               </div>
               <div className="producto-body">
                 <span className="producto-codigo text-muted">{p.codigo}</span>
