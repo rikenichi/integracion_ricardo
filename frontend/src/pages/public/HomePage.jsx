@@ -62,12 +62,10 @@ const beneficios = [
 ]
 
 const categoriasVisuales = [
-  { titulo: 'Jeringas', texto: 'Insumos de aplicación clínica', busqueda: 'jeringa', icono: 'J', clase: 'cat-jeringas' },
-  { titulo: 'Guantes', texto: 'Protección clínica y quirúrgica', busqueda: 'guantes', icono: 'G', clase: 'cat-guantes' },
-  { titulo: 'Gasas y compresas', texto: 'Curaciones y primeros auxilios', busqueda: 'gasa', icono: 'C', clase: 'cat-gasas' },
-  { titulo: 'Insumos médicos', texto: 'Uso profesional y domiciliario', busqueda: 'insumo', icono: 'M', clase: 'cat-insumos' },
-  { titulo: 'Suplementos', texto: 'Bienestar y apoyo nutricional', busqueda: 'suplemento', icono: 'S', clase: 'cat-suplementos' },
-  { titulo: 'Cuidado de heridas', texto: 'Apósitos y tratamiento tópico', busqueda: 'herida', icono: 'H', clase: 'cat-heridas' },
+  { titulo: 'Medicamentos', texto: 'Fármacos, analgésicos y antibióticos', grupo: 'medicamentos', icono: 'M', clase: 'cat-insumos' },
+  { titulo: 'Insumos médicos', texto: 'Jeringas, termómetros y oxímetros', grupo: 'insumos', icono: 'I', clase: 'cat-jeringas' },
+  { titulo: 'Bienestar', texto: 'Suplementos y nutrición esencial', grupo: 'bienestar', icono: 'B', clase: 'cat-suplementos' },
+  { titulo: 'Gasas y compresas', texto: 'Curación y primeros auxilios', busqueda: 'gasas', icono: 'G', clase: 'cat-gasas' },
 ]
 
 const descuentosDemo = [12, 18, 15, 20, 10, 16, 14, 22]
@@ -289,7 +287,7 @@ export default function HomePage() {
 
       <section className="home-section home-categories-section">
         <div className="section-heading">
-          <h2>Categorias para encontrar rapido</h2>
+          <h2>Categorías para encontrar rápido</h2>
         </div>
 
         <div className="home-categories-grid">
@@ -297,7 +295,9 @@ export default function HomePage() {
             <Link
               key={categoria.titulo}
               className={`home-category-card ${categoria.clase}`}
-              to={`/catalogo?search=${encodeURIComponent(categoria.busqueda)}`}
+              to={categoria.grupo
+                ? `/catalogo?grupo=${encodeURIComponent(categoria.grupo)}`
+                : `/catalogo?search=${encodeURIComponent(categoria.busqueda)}`}
             >
               <span className="category-icon">{categoria.icono}</span>
               <strong>{categoria.titulo}</strong>
