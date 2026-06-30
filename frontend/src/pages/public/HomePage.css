@@ -2,6 +2,7 @@
   background: #f4f8f5;
   color: var(--color-text);
   min-height: 100vh;
+  overflow-x: clip;
 }
 
 .home-page a {
