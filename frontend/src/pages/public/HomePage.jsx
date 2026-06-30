@@ -312,7 +312,7 @@ export default function HomePage() {
           <div>
             <h2>Promoción destacada</h2>
           </div>
-          <Link className="btn-outline" to="/catalogo">
+          <Link className="btn-outline" to="/ofertas">
             Ver todas las ofertas
           </Link>
         </div>

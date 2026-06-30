@@ -10,6 +10,7 @@ import HomePage from './pages/public/HomePage'
 import CatalogoPage from './pages/public/CatalogoPage'
 import ProductoDetallePage from './pages/public/ProductoDetallePage'
 import ContactoPage from './pages/public/ContactoPage'
+import OfertasPage from './pages/public/OfertasPage'
 import LoginPage from './pages/auth/LoginPage'
 import RegistroPage from './pages/auth/RegistroPage'
 import PerfilPage from './pages/auth/PerfilPage'
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="/registro" element={<RegistroPage />} />
             <Route path="/" element={<HomePage />} />
             <Route path="/contacto" element={<ContactoPage />} />
+            <Route path="/ofertas" element={<OfertasPage />} />
             <Route path="/catalogo" element={<CatalogoPage />} />
             <Route path="/producto/:codigo" element={<ProductoDetallePage />} />
             <Route path="/carrito" element={<CarritoPage />} />

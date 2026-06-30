@@ -96,7 +96,7 @@ export default function Navbar() {
         <Link to="/" className={navClass('/')}>Inicio</Link>
         {usuarioPuedeComprar && (
           <>
-            <Link to="/catalogo?search=ofertas" className={navClass('/catalogo?search=ofertas')}>Ofertas</Link>
+            <Link to="/ofertas" className={navClass('/ofertas')}>Ofertas</Link>
             <Link to="/catalogo?grupo=medicamentos" className={navClass('/catalogo?grupo=medicamentos')}>Medicamentos</Link>
             <Link to="/catalogo?grupo=insumos" className={navClass('/catalogo?grupo=insumos')}>Insumos médicos</Link>
             <Link to="/catalogo?grupo=bienestar" className={navClass('/catalogo?grupo=bienestar')}>Bienestar</Link>
