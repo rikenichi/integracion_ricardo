@@ -48,7 +48,7 @@ export default function OfertasPage() {
       </div>
 
       <p className="text-muted" style={{ marginTop: 32, fontSize: '0.78rem' }}>
-        * Precio promocional referencial. El precio final se aplica en el catálogo al momento de la compra.
+        * Promoción referencial. El precio final de compra corresponde al valor vigente mostrado en el catálogo.
       </p>
     </div>
   )
